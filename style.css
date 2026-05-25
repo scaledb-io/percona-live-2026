@@ -96,17 +96,19 @@ html.dark {
   border-radius: 4px;
   font-size: 0.9em;
 }
-.slidev-layout pre {
+.slidev-layout pre,
+.slidev-layout pre.slidev-code {
   background: var(--code-bg) !important;
   border: 1px solid var(--border-soft);
   border-radius: 8px;
   box-shadow: var(--shadow);
-  /* Cap height so a too-tall block can't break layout; auto-shrink font
-     within a sane range using container-query height units. */
+  /* Cap height so a too-tall block can't break layout, and scale font with
+     the slide canvas. !important is needed because Slidev's own .slidev-code
+     rule pins font-size to 12px. */
   max-height: 78cqh;
   overflow: auto;
-  font-size: clamp(0.65rem, 2.2cqh, 1rem);
-  line-height: 1.45;
+  font-size: clamp(0.85rem, 2.4cqh, 1.1rem) !important;
+  line-height: 1.45 !important;
 }
 
 /* ---------- Cover / title ---------- */
@@ -147,12 +149,13 @@ html.dark {
   color: var(--text-muted);
   margin-bottom: 18px;
 }
-.slidev-layout.zoom-code pre {
-  /* On zoom-code slides we have more vertical real-estate — allow the font to
-     ride a bit larger and tighten line-height. */
+.slidev-layout.zoom-code pre,
+.slidev-layout.zoom-code pre.slidev-code {
+  /* On zoom-code slides we have more vertical real-estate — allow the font
+     to ride a bit larger and tighten line-height. */
   max-height: 88cqh;
-  font-size: clamp(0.8rem, 2.6cqh, 1.15rem);
-  line-height: 1.4;
+  font-size: clamp(1rem, 2.9cqh, 1.3rem) !important;
+  line-height: 1.4 !important;
   padding: 16px 20px;
 }
 .slidev-layout.zoom-code pre code {
