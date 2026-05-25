@@ -106,6 +106,18 @@ layout: default
 - Redpanda (Kafka API): **3 nodes, RF=3, 64 partitions**, topic per table
 - Why Redpanda: no ZooKeeper, simpler ops, NVMe nodes
 
+The connector config is short — six settings do the real work.
+
+<!-- Why Redpanda over Kafka: simpler ops, no ZooKeeper, NVMe nodes. schema_only is the setup for the next big story (we bootstrap history differently). Tease the config: "six settings do the real work" → next slide. -->
+
+---
+layout: default
+class: zoom-code
+---
+
+# Capturing Change Without Re-Reading MySQL
+## — the connector config
+
 ```json {2-3|4-5|6-9|10-12|all}
 {
   "connector.class": "io.debezium.connector.mysql.MySqlConnector",
@@ -122,13 +134,31 @@ layout: default
 }
 ```
 
-<!-- Why Redpanda over Kafka: simpler ops, no ZooKeeper, NVMe nodes. schema_only is the setup for the next big story (we bootstrap history differently). Click through the config: connector source → tables → snapshot mode → typing → tombstone handling → buffer. -->
+<!-- Click through: connector source → table list → snapshot/typing → tombstone handling → buffer. Five clicks, fifteen seconds. Decimal mode = double is the gotcha that loses precision but parses; we'll come back to it in the JSON-as-bytes war story. -->
 
 ---
 layout: default
 ---
 
 # Kafka Engine → Materialized View → ReplacingMergeTree
+
+Three CREATE statements per table — that's the whole pattern.
+
+1. **`<table>_kafka`** — Kafka engine table, reads from Redpanda topic, everything `Nullable`
+2. **`analytics_<table>`** — ReplacingMergeTree, the queryable destination, owns `_version` + `_deleted`
+3. **`<table>_mv`** — Materialized view that types, coalesces, and inserts into (2)
+
+The MV is also the **PII firewall** — we'll come back to that on slide 13.
+
+<!-- The MV is the workhorse — it's also our PII firewall (slide 13). Set up the three-CREATE pattern verbally before showing it. Note: `__deleted` arrives as the literal string 'true'/'false', timestamps as epoch ms — the MV cleans both. Next slide is the actual code. -->
+
+---
+layout: default
+class: zoom-code
+---
+
+# Kafka Engine → Materialized View → ReplacingMergeTree
+## — the three CREATE statements
 
 ```sql {1-7|9-15|17-23|all}
 CREATE TABLE orders_kafka (
@@ -157,9 +187,7 @@ SELECT id, workspace_id,
 FROM orders_kafka;
 ```
 
-The MV does typing, coalescing, **and** acts as the PII firewall (slide 13).
-
-<!-- The MV is the workhorse — it's also our PII firewall (slide 13). Click through: Kafka source → RMT destination → MV transform. Note `__deleted` arriving as a string ('true'/'false'), MySQL decimals arriving as strings, timestamps as epoch ms. -->
+<!-- Click reveals: Kafka source → RMT destination → MV transform → all. Highlight on the MV: coalesce handles MySQL decimal-as-string, fromUnixTimestamp64Milli handles epoch-ms timestamps, the __deleted string cast becomes the soft-delete flag. -->
 
 ---
 layout: image-right

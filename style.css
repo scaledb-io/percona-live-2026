@@ -118,6 +118,28 @@ html.dark {
   color: var(--accent-cyan);
 }
 
+/* ---------- Zoom-code slides (setup → zoom pattern) ----------
+   On a "— in code" slide, the code block is the whole point. Push the title
+   smaller, hide the H2 subtitle as a small caption, and bump up the code font
+   so it reads from row 10 of an auditorium. */
+.slidev-layout.zoom-code h1 {
+  font-size: 1.6em;
+  margin-bottom: 0;
+}
+.slidev-layout.zoom-code h2 {
+  font-size: 0.85em;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+}
+.slidev-layout.zoom-code pre {
+  font-size: 1.05em;
+  line-height: 1.5;
+}
+.slidev-layout.zoom-code pre code {
+  font-size: inherit;
+}
+
 /* ---------- Stat card helper (used by s03 results-style slides) ---------- */
 .stat-grid {
   display: grid;
