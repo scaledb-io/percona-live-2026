@@ -16,13 +16,13 @@ aspectRatio: '16/9'
 canvasWidth: 1280
 ---
 
-# Streaming MySQL Changes to ClickHouse
+# Streaming MySQL Changes<br/>to ClickHouse
 
 ## Designing an End-to-End CDC Pipeline
 
 Javier Zon · Founder, ScaleDB
 
-Percona Live 2026 · USA
+<img src="/percona-live-2026-bay.png" class="event-logo" alt="Percona Live 2026 — Bay Area" />
 
 <!-- One-line hook — "We stream every change from MySQL into a ClickHouse data lake of 80 billion+ events and 35TB. Here's the architecture, and the scars we earned building it." -->
 
@@ -40,12 +40,12 @@ layout: default
 <!-- Frame the pain everyone in the room feels. Read replicas are a band-aid; analytical queries and OLTP don't share well. -->
 
 ---
-layout: center
+layout: default
 ---
 
 # What We're Actually Moving
 
-<div class="grid grid-cols-2 gap-4">
+<div class="stat-grid">
   <div class="stat-card">
     <div class="stat-number">80B+</div>
     <div class="stat-label">Events in ClickHouse</div>
@@ -67,11 +67,38 @@ layout: center
 <!-- Establish credibility through scale; the cost stat lands with budget owners — a full real-time lake for the price of a few RDS instances. -->
 
 ---
-layout: image-right
-image: /graphics/g01_pipeline.png
+layout: default
 ---
 
 # The End-to-End Pipeline
+
+<div class="pipeline">
+  <div class="lane">
+    <div class="lane-label">OLTP</div>
+    <div class="node">MySQL 8<br/><span class="hint">binlog</span></div>
+  </div>
+  <div class="connector"></div>
+  <div class="lane">
+    <div class="lane-label">CDC</div>
+    <div class="node">Debezium</div>
+    <div class="arrow">→</div>
+    <div class="node">Redpanda<br/><span class="hint">RF=3 · 64 partitions</span></div>
+  </div>
+  <div class="connector"></div>
+  <div class="lane">
+    <div class="lane-label">OLAP — Lake</div>
+    <div class="node">Kafka engine</div>
+    <div class="arrow">→</div>
+    <div class="node">Materialized View<br/><span class="hint">types · PII firewall</span></div>
+    <div class="arrow">→</div>
+    <div class="node accent">ReplacingMergeTree<br/><span class="hint">_version · _deleted</span></div>
+  </div>
+  <div class="connector"></div>
+  <div class="lane">
+    <div class="lane-label">Clients</div>
+    <div class="node ghost">BI · AI agents</div>
+  </div>
+</div>
 
 **Loose coupling** — Redpanda buffers so ClickHouse downtime never loses data.
 
@@ -120,7 +147,7 @@ class: zoom-code
 # Capturing Change Without Re-Reading MySQL
 ## — the connector config
 
-```json {2-3|4-5|6-9|10-12|all}
+```json {2-3|4-5|6-9|10-12}
 {
   "connector.class": "io.debezium.connector.mysql.MySqlConnector",
   "database.include.list": "app_production",
@@ -162,7 +189,7 @@ class: zoom-code
 # Kafka Engine → Materialized View → ReplacingMergeTree
 ## — the three CREATE statements
 
-```sql {1-6|8-13|15-22|all}
+```sql {1-6|8-13|15-22}
 CREATE TABLE orders_kafka (
   id UInt64, workspace_id UInt64, total_amount Nullable(Float64),
   created_at Int64, updated_at Int64, __deleted Nullable(String)
@@ -190,60 +217,115 @@ FROM orders_kafka;
 <!-- Click reveals: Kafka source → RMT destination → MV transform → all. Highlight on the MV: coalesce handles MySQL decimal-as-string, fromUnixTimestamp64Milli handles epoch-ms timestamps, the __deleted string cast becomes the soft-delete flag. -->
 
 ---
-layout: image-right
-image: /graphics/g04_bootstrap.png
+layout: default
+class: war
 ---
 
 # We Did NOT Load 9 Billion Rows Through Debezium
 
-**WAR STORY**
+CDC is for the stream, **not** for hauling history.
 
-- Snapshotting history through CDC = days of replica load + connector risk
-- Instead: **restore RDS snapshot → export to Parquet on S3 → bulk-load into ClickHouse**
+<div class="pipeline">
+  <div class="lane">
+    <div class="lane-label">1 · Snapshot</div>
+    <div class="node">RDS snapshot<br/><span class="hint">point-in-time copy</span></div>
+  </div>
+  <div class="connector"></div>
+  <div class="lane">
+    <div class="lane-label">2 · Export</div>
+    <div class="node">Parquet on S3<br/><span class="hint">columnar, compressed</span></div>
+  </div>
+  <div class="connector"></div>
+  <div class="lane">
+    <div class="lane-label">3 · Bulk-load</div>
+    <div class="node accent">ClickHouse RMT<br/><span class="hint">80B rows in hours</span></div>
+  </div>
+  <div class="connector"></div>
+  <div class="lane">
+    <div class="lane-label">4 · Catch up</div>
+    <div class="node ghost">CDC from binlog pos.<br/><span class="hint">delta only</span></div>
+  </div>
+</div>
+
+- Snapshotting history through CDC = **days** of replica load + connector risk
+- Decoupling cold-start from the live pipeline → primary never feels it
 - Then start CDC at the binlog position for the delta — best of both worlds
-- Result: 80B rows of history loaded in **hours, not days** — primary never felt it
 
-<!-- This is the headline takeaway. Debezium is for the *stream*, not for hauling history. Snapshot→Parquet→bulk-insert decouples the cold start from the live pipeline and never touches the production primary. -->
+<!-- This is the headline takeaway. Debezium is for the *stream*, not for hauling history. Snapshot→Parquet→bulk-insert decouples the cold start from the live pipeline and never touches the production primary. Hours not days, no impact on prod. -->
 
 ---
-layout: image-right
-image: /graphics/g05_tombstone.png
+layout: default
+class: war
 ---
 
 # A Delete Is Just Another Event
 
-**WAR STORY** — Naïve consumers either drop real deletes or choke on tombstones (null-value records).
+Naïve consumers either drop real deletes or choke on tombstones (null-value records).
+
+<div class="pipeline">
+  <div class="lane">
+    <div class="lane-label">MySQL</div>
+    <div class="node">DELETE FROM orders<br/><span class="hint">WHERE id = …</span></div>
+  </div>
+  <div class="connector"></div>
+  <div class="lane">
+    <div class="lane-label">Kafka</div>
+    <div class="node">Tombstone<br/><span class="hint">key=id · value=null</span></div>
+  </div>
+  <div class="connector"></div>
+  <div class="lane">
+    <div class="lane-label">Debezium</div>
+    <div class="node">unwrap rewrite<br/><span class="hint">__deleted = 'true'</span></div>
+  </div>
+  <div class="connector"></div>
+  <div class="lane">
+    <div class="lane-label">ClickHouse</div>
+    <div class="node accent">_deleted = 1<br/><span class="hint">row kept, filtered at query</span></div>
+  </div>
+</div>
 
 ```json
 "transforms.unwrap.delete.handling.mode": "rewrite",
 "transforms.unwrap.drop.tombstones":      "true"
 ```
 
-…and in the materialized view:
-
-```sql
-if(__deleted = 'true', 1, 0) AS _deleted
-```
-
-Result: deletes become `_deleted = 1` — history kept, churned rows still queryable.
+History kept, churned rows still queryable.
 
 <!-- Explain what a tombstone is for the half of the room that's never hit it. Soft-delete means we can still report on churned/cancelled rows. -->
 
 ---
 layout: default
+class: war
 ---
 
 # Two Ways Dedup Silently Fails
 
-**WAR STORY** — Mutable ORDER BY columns. Cross-partition rows. Either one quietly keeps duplicates. Found via row-count drift: **12.68% extra rows** on one table.
+RMT dedups **within a partition, by sort key**. Violate either and it quietly keeps duplicates.
 
-```sql
--- Before: ORDER BY uses a column that can change after insert → BOTH versions kept
+- **Mutable column in `ORDER BY`** — a value that changes post-insert produces two rows with different sort keys; RMT keeps both
+- **Cross-partition duplicates** — RMT never dedups across partitions; one row reinserted into a new month survives
+
+We caught it by row-count drift: **12.68% extra rows** on one table. Full reload required.
+
+**Rules:** only immutable columns in `ORDER BY` · never partition on anything CDC can mutate.
+
+<!-- Set up the two failure modes verbally. Land the 12.68% as the punchline — that's the number that made us investigate. Next slide shows the actual rebuild migration. -->
+
+---
+layout: default
+class: zoom-code war
+---
+
+# Two Ways Dedup Silently Fails
+## — the rebuild migration (atomic swap)
+
+```sql {1-4|6-10|12-14}
+-- Before: ORDER BY uses a column that can change post-insert → BOTH versions kept
 ENGINE = ReplacingMergeTree(_version)
 PARTITION BY toYYYYMM(created_at)
 ORDER BY (site_id, id)              -- site_id was being reassigned
 
--- Fix: rebuild with immutable-only sort key, swap atomically
+-- Fix: rebuild with immutable-only sort key
 CREATE TABLE analytics_courses_new (...)
 ENGINE = ReplacingMergeTree(_version)
 PARTITION BY toYYYYMM(created_at)
@@ -254,24 +336,39 @@ OPTIMIZE TABLE analytics_courses_new FINAL;
 EXCHANGE TABLES analytics_courses AND analytics_courses_new;
 ```
 
-**Rules:** only immutable columns in `ORDER BY` · never partition on anything CDC can mutate.
-
-<!-- RMT dedups *within a partition, by sort key*. Violate either and it quietly keeps duplicates. The 12.68% number is real and required a full reload. -->
+<!-- Click reveals: before (the broken ORDER BY), after (the new table with id-only sort key), the atomic swap (INSERT + OPTIMIZE + EXCHANGE). Drop the MV first so CDC buffers in Redpanda during migration; recreate after. -->
 
 ---
 layout: default
+class: war
 ---
 
 # The Connector That Lied About Being Fine
 
-**WAR STORY** — One large MySQL transaction overflowed `binlog.buffer.size`. Connector said RUNNING. Offsets froze.
+One large MySQL transaction overflowed `binlog.buffer.size`. The connector dutifully reported **RUNNING**. Offsets froze for 6+ hours.
 
-```json
+- Shared binlog stream → one stuck transaction stalled **every** workspace connector
+- Health is **data moving**, not an API status field
+- Compare connector binlog position vs `SHOW MASTER STATUS` — that's the truth
+- Fix: buffer 16 KB → 128 KB, plus monitor offsets per partition
+
+<!-- The scariest failures are the silent ones. Walk through: large txn, buffer overflow, connector state stays RUNNING because there's no exception path. Health = data moving, not API state. Set up the next slide: what we monitor now. -->
+
+---
+layout: default
+class: zoom-code war
+---
+
+# The Connector That Lied About Being Fine
+## — what RUNNING really meant, and the fix
+
+```json {1-5|7}
 GET /connectors/orders-connector/status
 {
   "connector": { "state": "RUNNING" },
   "tasks":     [{ "state": "RUNNING", "trace": null }]
 }
+
 // debezium.offsets topic: same binlog position for 6+ hours
 ```
 
@@ -281,37 +378,48 @@ max.batch.size     = 2048
 max.queue.size     = 8192
 ```
 
-- Shared binlog stream → one stuck transaction stalled **every** workspace connector
-- Health = **data moving**, not an API status field
-- Compare connector binlog position vs `SHOW MASTER STATUS` — that's the truth
-
-<!-- The scariest failures are the silent ones. Health = data moving, not an API saying "RUNNING". The fix script: poll connector offsets against MySQL master status; alert on files-behind, not on state strings. -->
+<!-- Click reveals: the misleading status JSON → the truth from the offsets topic → the tuning settings. Buffer size is the key fix; the other two are headroom for similar bursts. -->
 
 ---
 layout: default
+class: war
 ---
 
 # When NULL Isn't False
 
-**WAR STORY** — Rails booleans have three states: `0 (false)` · `1 (true)` · `NULL (legacy/unset)`. We assumed NULL meant not-anonymous. It didn't. **+620M rows backfilled.**
+Rails booleans have three states: `0 (false)` · `1 (true)` · `NULL (legacy/unset)`.
 
-```sql
+- We assumed `NULL = not anonymous` → backfilled **+620M extra rows**
+- Worse: `anonymous` is a **generated column** lazily synced from email/phone, so even `= 0` lied for newly-inserted rows
+- Fix: filter on the **source identity fields**, not the derived flag
+
+Bonus war story: `mysql()` federation doesn't push down `ORDER BY` / `LIMIT` — treat it as a full scan and chunk by `id` range yourself.
+
+<!-- CDC faithfully replicates your source's quirks. Know your application's data semantics, not just the column type. Three-state booleans bite Rails-stack folks especially hard. Land the +620M as the punchline, then drop the federation note as the bonus takeaway. -->
+
+---
+layout: default
+class: zoom-code war
+---
+
+# When NULL Isn't False
+## — the buggy query and the fix
+
+```sql {1-2|4-5|7-11}
 -- The bug: pulled in every NULL-anonymous legacy contact
 WHERE anonymous = 0
 
--- Worse: `anonymous` is a generated column lazily synced from email/phone.
--- Even = 0 lied for newly-inserted rows.
+-- Worse: `anonymous` is a generated column, lazily synced from email/phone.
+-- Even `= 0` lied for newly-inserted rows.
 
--- Fix: filter on the *source* identity fields, not the derived flag
+-- Fix: filter on the source identity fields, not the derived flag
 SELECT id, workspace_id, ...
 FROM mysql(app_production, table='contacts')
 WHERE (email_address IS NOT NULL AND email_address != '')
    OR (phone_number  IS NOT NULL AND phone_number  != '');
 ```
 
-`mysql()` federation doesn't push down `ORDER BY` / `LIMIT` — treat it as a full table scan and chunk by `id` range yourself.
-
-<!-- CDC faithfully replicates your source's quirks. Know your application's data semantics, not just the column type. Also drop the federation note: `mysql()` doesn't push down ORDER BY/LIMIT — treat it as a full scan. -->
+<!-- Click reveals: the obvious-looking bug → the deeper gotcha (generated column) → the correct filter. The fix pulls from the source identity fields because they're authoritative; the derived flag is downstream of them and can be stale. -->
 
 ---
 layout: default
@@ -319,7 +427,28 @@ layout: default
 
 # PII Never Reaches the Analytics Tables
 
-PII is excluded **at Debezium** — sensitive bytes never enter the topic. The MV is the second hard boundary: explicit column list, no `SELECT *`.
+Two hard boundaries, both enforced **before** any analyst sees a row:
+
+- **At the connector** — Debezium's `column.exclude.list` drops PII columns from the binlog stream. Sensitive bytes never enter the topic.
+- **At the materialized view** — explicit column list, no `SELECT *`. PII columns can't accidentally land downstream even if the connector misses one.
+
+Contacts are identified by **presence** of email/phone, never by the values. Analysts get rich behavior; sensitive fields physically don't exist downstream.
+
+<!-- Privacy-by-construction. There's no "remember to mask" — the data physically isn't there. Compliance and engineering both relax. Next slide shows the two boundaries side by side. -->
+
+---
+layout: default
+class: zoom-code
+---
+
+# PII Never Reaches the Analytics Tables
+## — the two boundaries
+
+<div class="grid grid-cols-2 gap-6">
+
+<div>
+
+**1 · At the connector**
 
 ```json
 "column.exclude.list":
@@ -333,29 +462,58 @@ PII is excluded **at Debezium** — sensitive bytes never enter the topic. The M
    app.orders.encryption_key"
 ```
 
+</div>
+
+<div>
+
+**2 · In the materialized view**
+
 ```sql
 -- Contacts MV: PII → presence flags only
 SELECT id, workspace_id,
-  if(email_address  != '', 1, 0) AS has_email,
-  if(phone_number   != '', 1, 0) AS has_phone,
-  if(first_name     != '', 1, 0) AS has_first_name,
+  if(email_address != '', 1, 0) AS has_email,
+  if(phone_number  != '', 1, 0) AS has_phone,
+  if(first_name    != '', 1, 0) AS has_first_name,
   ...
 FROM contacts_kafka;
 ```
 
-Analysts get rich behavior. Sensitive values simply don't exist downstream.
+</div>
 
-<!-- This is privacy-by-construction. There's no "remember to mask" — the data physically isn't there. Compliance and engineering both relax. -->
+</div>
+
+<!-- Side-by-side: the connector boundary on the left strips PII at the source; the MV on the right is a belt-and-suspenders second layer that maps remaining PII to presence flags. Two independent defenses. -->
 
 ---
-layout: image-right
-image: /graphics/g08_mcp_gateway.png
+layout: default
 ---
 
 # Letting AI Agents Query the Lake — Safely
 
-- **ScaleDB MCP:** read-only SQL gateway for AI agents
-- GitHub OAuth org auth · SELECT-only · whitelisted tables · audit logging
+<div class="pipeline">
+  <div class="lane">
+    <div class="lane-label">Client</div>
+    <div class="node">AI agent<br/><span class="hint">Claude · GPT · custom</span></div>
+  </div>
+  <div class="connector"></div>
+  <div class="lane">
+    <div class="lane-label">Auth</div>
+    <div class="node">GitHub OAuth<br/><span class="hint">org-scoped</span></div>
+  </div>
+  <div class="connector"></div>
+  <div class="lane">
+    <div class="lane-label">Gateway</div>
+    <div class="node accent">ScaleDB MCP<br/><span class="hint">SELECT-only · whitelist · audit</span></div>
+  </div>
+  <div class="connector"></div>
+  <div class="lane">
+    <div class="lane-label">Data</div>
+    <div class="node">Analytics tables<br/><span class="hint">PII tables blocked</span></div>
+  </div>
+</div>
+
+- The access layer is the **control plane** — assume the agent is curious and untrusted
+- SELECT-only · whitelisted tables · every query audited
 - **Blocks PII tables outright** (users, contacts, memberships)
 - Agents get analytics power; they **cannot** read sensitive data — even by accident
 
@@ -367,10 +525,27 @@ layout: default
 
 # Proving the Lake Matches the Source
 
-Cheap fingerprint per ID batch — find where to look *before* doing row comparisons.
+Drift is inevitable at billions of rows. The trick: find **where** to look before comparing rows.
 
-```sql
--- Per-batch fingerprint, run against source MySQL and target in parallel
+- **CRC scan** all tables → list mismatched ID batches in minutes
+- **Deep scan** only the bad batches → row-by-row column compare
+- **Fix mode**: `REPLACE INTO` target from source; re-verify
+- **Time fence** all queries to before script-start, so in-flight CDC lag doesn't cause false positives
+
+Cheap fingerprint, expensive only where it matters.
+
+<!-- The fingerprint is just count + ID sum + timestamp sums per ID batch — runs against source MySQL and target in parallel. Mismatched batches get the deep scan. Time fence is the key trick: ignore rows updated after script start time, so we compare the same snapshot on both sides. -->
+
+---
+layout: default
+class: zoom-code
+---
+
+# Proving the Lake Matches the Source
+## — the per-batch fingerprint
+
+```sql {1|3-6|8|9}
+-- Run against source MySQL and target ClickHouse in parallel
 SELECT
   COUNT(*),
   COALESCE(SUM(id), 0)                          AS id_sum,
@@ -381,23 +556,41 @@ WHERE id BETWEEN :batch_min AND :batch_max
   AND updated_at < :fence_time;   -- ignore in-flight CDC lag
 ```
 
-- **CRC scan** all tables → list mismatched batches in minutes
-- **Deep scan** only bad batches → row-by-row column compare
-- **Fix mode**: `REPLACE INTO` target from source; re-verify
-- Time fence makes results deterministic during live replication
+Four cheap aggregates per batch. If any disagree → schedule deep scan. The time fence is the trick: both sides see the same snapshot regardless of replication lag.
 
-<!-- Drift is inevitable at billions of rows. The trick is a cheap fingerprint that finds *where* to look before doing expensive row comparisons. Time fence: only compare rows older than script start time, so in-flight CDC lag doesn't cause false positives. -->
+<!-- Click reveals: header comment → the four aggregates → batch range → time fence. Sum-of-ids catches missing/extra rows; sum-of-timestamps catches stale updates. Two ints + two longs per batch — tiny network cost, runs across a billion-row table in minutes. -->
 
 ---
-layout: image-right
-image: /graphics/g10_results_bars.png
+layout: default
 ---
 
 # What We Got
 
-- Query speed: minutes → seconds
-- Cold-start: days → hours
-- Lag: minutes → seconds
+<div class="results">
+  <div class="result-row">
+    <div class="result-label">Query speed</div>
+    <div class="result-bars">
+      <div class="bar before" style="width: 90%"><span>minutes</span></div>
+      <div class="bar after"  style="width: 12%"><span>seconds</span></div>
+    </div>
+  </div>
+  <div class="result-row">
+    <div class="result-label">Cold-start</div>
+    <div class="result-bars">
+      <div class="bar before" style="width: 90%"><span>days</span></div>
+      <div class="bar after"  style="width: 18%"><span>hours</span></div>
+    </div>
+  </div>
+  <div class="result-row">
+    <div class="result-label">CDC lag</div>
+    <div class="result-bars">
+      <div class="bar before" style="width: 90%"><span>minutes</span></div>
+      <div class="bar after"  style="width: 8%"><span>seconds</span></div>
+    </div>
+  </div>
+</div>
+
+Speed = ClickHouse + RMT · Cold-start = Parquet bootstrap · Safety = MV firewall + MCP gateway.
 
 <!-- Tie each result back to a decision. Speed = ClickHouse + RMT; cold start = Parquet bootstrap; safety = MV firewall + MCP gateway. -->
 
@@ -416,15 +609,31 @@ layout: default
 <!-- This is the slide people photograph. Keep it crisp. -->
 
 ---
-layout: end
+layout: default
+class: closing
 ---
+
+<div class="closing-stack">
+
+<img src="/scaledb-logo.png" class="brand-logo" alt="ScaleDB" />
 
 # Questions?
 
-Javier Zon · Founder, ScaleDB
+<div class="closing-meta">Javier Zon · Founder, ScaleDB · <code>support@scaledb.io</code></div>
 
-`support@scaledb.io`
+<div class="cta-cards">
+  <a href="https://scaledb.io" class="cta-card">
+    <div class="cta-card-label">Learn more about us</div>
+    <div class="cta-card-url">scaledb.io</div>
+  </a>
+  <a href="https://github.com/scaledb-io/cloud" class="cta-card">
+    <div class="cta-card-label">Open source CDC platform</div>
+    <div class="cta-card-url">github.com/scaledb-io/cloud</div>
+  </a>
+</div>
 
-[scaledb.io](https://scaledb.io) · [github.com/scaledb-io/scaledb](https://github.com/scaledb-io/scaledb)
+<img src="/percona-live-2026-bay.png" class="event-logo-small" alt="Percona Live 26 · Bay Area" />
 
-<!-- Invite questions, then the marketing close: point people to scaledb.io and announce that the ScaleDB binary is now open source — they can self-host the exact pipeline from this talk. The two URLs are the call to action. -->
+</div>
+
+<!-- Invite questions, then the marketing close: point people to scaledb.io and announce that the ScaleDB binary is open source — they can self-host the exact pipeline from this talk. The two URLs are the call to action. -->

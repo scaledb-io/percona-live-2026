@@ -13,6 +13,7 @@
     "@slidev/cli": "^0.50.0",
     "@slidev/theme-default": "^0.25.0",
     "@slidev/theme-seriph": "^0.25.0",
+    "mermaid": "^11.15.0",
     "vue": "^3.5.0"
   }
 }

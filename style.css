@@ -48,12 +48,41 @@ html.dark {
   font-family: 'Space Grotesk', system-ui, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-primary);
+  /* Smooth color crossfade when toggling dark mode via `d` */
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease;
+}
+.slidev-layout * {
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .slidev-layout h1 {
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text-primary);
+}
+/* Short cyan accent line under titles. Skipped on the title slide,
+   zoom-code slides (which have a subtitle right after), and the closing. */
+.slidev-layout h1::after {
+  content: '';
+  display: block;
+  width: 72px;
+  height: 3px;
+  background: var(--accent-cyan);
+  margin-top: 10px;
+  margin-bottom: 18px;
+  border-radius: 2px;
+}
+.slidev-layout.zoom-code h1::after,
+.slidev-layout.closing h1::after,
+.slidev-page-1 .slidev-layout h1::after {
+  display: none;
 }
 .slidev-layout h2 {
   font-weight: 500;
@@ -68,7 +97,8 @@ html.dark {
 .slidev-layout p,
 .slidev-layout li {
   color: var(--text-secondary);
-  line-height: 1.55;
+  font-size: 1.3rem;
+  line-height: 1.5;
 }
 
 .slidev-layout strong {
@@ -83,6 +113,25 @@ html.dark {
 }
 .slidev-layout a:hover {
   border-bottom-color: var(--accent-cyan);
+}
+
+/* Click-reveal contrast strategy for projectors: don't dim non-active lines
+   (light-on-light is unreadable from the back row). Instead keep everything
+   legible and HIGHLIGHT the active lines with a cyan tint + left bar. */
+.slidev-code .line.dishonored,
+.slidev-code .line.slidev-code-dishonored {
+  opacity: 1 !important;
+  filter: saturate(0.55);
+}
+.slidev-code .line.highlighted,
+.slidev-code .line.slidev-code-highlighted {
+  display: inline-block;
+  width: 100%;
+  background: color-mix(in srgb, var(--accent-cyan) 14%, transparent);
+  box-shadow: inset 3px 0 0 var(--accent-cyan);
+  padding-left: 6px;
+  margin-left: -6px;
+  font-weight: 500;
 }
 
 /* ---------- Code ---------- */
@@ -136,18 +185,18 @@ html.dark {
 }
 
 /* ---------- Zoom-code slides (setup → zoom pattern) ----------
-   On a "— in code" slide, the code block is the whole point. Push the title
-   smaller, hide the H2 subtitle as a small caption, and bump up the code font
-   so it reads from row 10 of an auditorium. */
+   On a "— in code" slide the code is the focus, but the title stays at the
+   same size as every other slide so visual rhythm is consistent across the
+   deck. The H2 stays small as a caption-style subtitle. */
 .slidev-layout.zoom-code h1 {
-  font-size: 1.6em;
   margin-bottom: 0;
 }
 .slidev-layout.zoom-code h2 {
   font-size: 0.85em;
   font-weight: 400;
   color: var(--text-muted);
-  margin-bottom: 18px;
+  margin-top: 4px;
+  margin-bottom: 14px;
 }
 .slidev-layout.zoom-code pre,
 .slidev-layout.zoom-code pre.slidev-code {
@@ -192,18 +241,156 @@ html.dark {
   margin-top: 8px;
 }
 
-/* ---------- War-story callout ---------- */
-.war-story::before {
+/* ---------- War-story slides — red edge + rubber stamp ---------- */
+:root,
+html:not(.dark) { --war-red: #C62828; }
+html.dark       { --war-red: #FF5252; }
+
+.slidev-layout.war {
+  position: relative;
+  border-left: 6px solid var(--war-red);
+  padding-left: 70px;
+}
+.slidev-layout.war::after {
   content: 'WAR STORY';
-  display: inline-block;
-  font-size: 0.7em;
-  letter-spacing: 0.15em;
-  font-weight: 700;
-  color: var(--accent-amber);
-  padding: 4px 10px;
-  border: 1px solid var(--accent-amber);
+  position: absolute;
+  top: 36px;
+  right: 32px;
+  transform: rotate(-8deg);
+  color: var(--war-red);
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 900;
+  font-size: 1.15em;
+  letter-spacing: 0.22em;
+  padding: 6px 14px;
+  border: 3px double var(--war-red);
   border-radius: 4px;
-  margin-bottom: 12px;
+  opacity: 0.85;
+  pointer-events: none;
+  /* light "stamped ink" feel — slight texture via a tiny shadow */
+  text-shadow: 0 0 1px var(--war-red);
+  box-shadow: inset 0 0 0 1px rgba(198, 40, 40, 0.15);
+}
+
+/* ---------- Pipeline diagram (HTML/CSS, replaces PNGs) ---------- */
+.pipeline {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 6px;
+  margin: 24px 0 28px;
+  flex-wrap: nowrap;
+}
+.pipeline .lane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+.pipeline .lane-label {
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.pipeline .node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.85em;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--text-primary);
+  background: var(--bg-color);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  padding: 8px 10px;
+  width: 100%;
+  min-height: 44px;
+}
+.pipeline .node.accent {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 1px var(--accent-cyan) inset;
+}
+.pipeline .node.ghost {
+  border-style: dashed;
+  background: transparent;
+  color: var(--text-secondary);
+}
+.pipeline .node .hint {
+  font-size: 0.75em;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.pipeline .arrow {
+  font-size: 1.1em;
+  color: var(--accent-cyan);
+  line-height: 1;
+}
+.pipeline .connector {
+  align-self: center;
+  font-size: 1.6em;
+  color: var(--accent-cyan);
+  padding: 0 2px;
+}
+.pipeline .connector::before {
+  content: '▸';
+}
+
+/* ---------- Results bars (slide /23) ---------- */
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin: 30px 0;
+}
+.result-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  align-items: center;
+  gap: 16px;
+}
+.result-label {
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: right;
+}
+.result-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bar {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9em;
+  color: var(--bg-color);
+  transition: width 0.6s ease;
+}
+.bar.before {
+  background: var(--accent-amber);
+}
+.bar.after {
+  background: var(--accent-cyan);
+}
+.bar span {
+  white-space: nowrap;
 }
 
 /* ---------- Event tag ---------- */
@@ -212,6 +399,130 @@ html.dark {
   color: var(--text-muted);
   letter-spacing: 0.2em;
   text-transform: uppercase;
+}
+
+/* ---------- Event logo on the title slide ---------- */
+.event-logo {
+  display: block;
+  margin: 28px auto 0;
+  max-width: 360px;
+  width: 30%;
+  height: auto;
+  opacity: 0.92;
+}
+html.dark .event-logo {
+  /* Logo art was designed on white — gently invert so it sits well on dark. */
+  filter: invert(1) hue-rotate(180deg);
+  opacity: 0.85;
+}
+
+/* ---------- Closing slide (Questions? + CTA + branding) ---------- */
+.slidev-layout.closing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 60px;
+}
+.closing-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 820px;
+  gap: 12px;
+}
+.brand-logo {
+  width: 110px;
+  height: auto;
+  margin-bottom: 4px;
+}
+.slidev-layout.closing h1 {
+  font-size: 2.6em;
+  margin: 0;
+  line-height: 1;
+}
+.closing-meta {
+  font-size: 0.95em;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+.closing-meta code {
+  background: var(--code-bg);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.95em;
+}
+.cta-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+  margin-top: 22px;
+}
+.cta-card {
+  display: block;
+  padding: 16px 22px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  border-left: 4px solid var(--accent-cyan);
+  border-radius: 8px;
+  text-decoration: none !important;
+  border-bottom: 1px solid var(--border-soft) !important;
+  box-shadow: var(--shadow);
+  text-align: left;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.cta-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+}
+.cta-card-label {
+  font-size: 0.78em;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.cta-card-url {
+  font-size: 1.15em;
+  font-weight: 700;
+  color: var(--accent-cyan);
+}
+.event-logo-small {
+  width: 170px;
+  height: auto;
+  margin-top: 18px;
+  opacity: 0.7;
+}
+html.dark .event-logo-small {
+  filter: invert(1) hue-rotate(180deg);
+  opacity: 0.6;
+}
+
+/* ---------- Deck footer (renders on every slide except title + closing) ---------- */
+.deck-footer {
+  position: absolute;
+  bottom: 14px;
+  left: 60px;
+  right: 60px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.65em;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  font-family: 'Space Grotesk', sans-serif;
+  z-index: 1;
+}
+.deck-footer-left {
+  font-weight: 500;
+}
+.deck-footer-right {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
 /* Slidev's goto-dialog is parked off-screen via `-top-20` when closed, but its
