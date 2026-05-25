@@ -169,6 +169,12 @@ html.dark {
   text-transform: uppercase;
 }
 
+/* Slidev's goto-dialog is parked off-screen (-top-20) but its 18-item slide list
+   overflows the parent and bleeds into the viewport on mobile. Clip it. */
+#slidev-goto-dialog {
+  overflow: hidden;
+}
+
 /* ---------- Nav controls: fade until interaction (avoid overlap on mobile) ---------- */
 .slidev-nav-controls,
 #slidev-nav-controls,
