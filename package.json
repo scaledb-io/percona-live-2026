@@ -1,0 +1,18 @@
+{
+  "name": "percona-live-2026",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "slidev --open",
+    "build": "slidev build",
+    "build:pages": "slidev build --base /percona-live-2026/",
+    "export": "slidev export",
+    "export:pdf": "slidev export --output percona-live-2026.pdf"
+  },
+  "dependencies": {
+    "@slidev/cli": "^0.50.0",
+    "@slidev/theme-default": "^0.25.0",
+    "@slidev/theme-seriph": "^0.25.0",
+    "vue": "^3.5.0"
+  }
+}

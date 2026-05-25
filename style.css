@@ -1,0 +1,170 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  --slidev-theme-primary: #1F8FFF;
+  --slidev-theme-accent: #FFB020;
+}
+
+/* ---------- Light (default — projector friendly) ---------- */
+:root,
+html:not(.dark) {
+  --bg-color: #FAFAF7;
+  --bg-elevated: #FFFFFF;
+  --text-primary: #0D1117;
+  --text-secondary: #1F2937;
+  --text-muted: #6B7280;
+  --accent-cyan: #0B6FD1;        /* darker on light for contrast */
+  --accent-amber: #B57500;
+  --border-soft: #E5E7EB;
+  --code-bg: #F3F4F6;
+  --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* ---------- Dark (screen review) ---------- */
+html.dark {
+  --bg-color: #0D1117;
+  --bg-elevated: #161B22;
+  --text-primary: #F0F6FC;
+  --text-secondary: #C9D1D9;
+  --text-muted: #8B949E;
+  --accent-cyan: #1F8FFF;
+  --accent-amber: #FFB020;
+  --border-soft: #30363D;
+  --code-bg: #161B22;
+  --shadow: 0 0 24px rgba(31,143,255,0.08);
+}
+
+/* ---------- Globals ---------- */
+.slidev-layout {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+}
+
+.slidev-layout h1 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.slidev-layout h2 {
+  font-weight: 500;
+  color: var(--accent-cyan);
+  letter-spacing: -0.01em;
+}
+.slidev-layout h3 {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.slidev-layout p,
+.slidev-layout li {
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.slidev-layout strong {
+  color: var(--accent-amber);
+  font-weight: 700;
+}
+
+.slidev-layout a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent-cyan) 30%, transparent);
+}
+.slidev-layout a:hover {
+  border-bottom-color: var(--accent-cyan);
+}
+
+/* ---------- Code ---------- */
+.slidev-layout code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+.slidev-layout :not(pre) > code {
+  background: var(--code-bg);
+  color: var(--text-primary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.slidev-layout pre {
+  background: var(--code-bg) !important;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+/* ---------- Cover / title ---------- */
+.slidev-layout.cover h1,
+.slidev-layout.intro h1 {
+  font-size: 3.5em;
+  line-height: 1.05;
+}
+.slidev-layout.cover h2,
+.slidev-layout.intro h2 {
+  font-size: 1.6em;
+  font-weight: 500;
+  margin-top: 0.4em;
+}
+
+/* ---------- Lists ---------- */
+.slidev-layout ul {
+  padding-left: 1.2em;
+}
+.slidev-layout li {
+  margin-bottom: 0.4em;
+}
+.slidev-layout li::marker {
+  color: var(--accent-cyan);
+}
+
+/* ---------- Stat card helper (used by s03 results-style slides) ---------- */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 32px;
+}
+.stat-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  border-left: 4px solid var(--accent-cyan);
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+.stat-card .stat-number,
+.stat-card .number {
+  font-size: 2.4em;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  line-height: 1;
+}
+.stat-card .stat-label,
+.stat-card .label {
+  font-size: 0.95em;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+/* ---------- War-story callout ---------- */
+.war-story::before {
+  content: 'WAR STORY';
+  display: inline-block;
+  font-size: 0.7em;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+  color: var(--accent-amber);
+  padding: 4px 10px;
+  border: 1px solid var(--accent-amber);
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+/* ---------- Event tag ---------- */
+.event-tag {
+  font-size: 0.75em;
+  color: var(--text-muted);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
