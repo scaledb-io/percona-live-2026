@@ -169,10 +169,13 @@ html.dark {
   text-transform: uppercase;
 }
 
-/* Slidev's goto-dialog is parked off-screen (-top-20) but its 18-item slide list
-   overflows the parent and bleeds into the viewport on mobile. Clip it. */
-#slidev-goto-dialog {
-  overflow: hidden;
+/* Slidev's goto-dialog is parked off-screen via `-top-20` when closed, but its
+   18-item autocomplete list overflows the container by ~790px and bleeds into
+   the viewport on mobile. Hide it while parked; opening (g) swaps in `top-5`
+   and the rule stops applying. */
+#slidev-goto-dialog.-top-20 {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 /* ---------- Nav controls: fade until interaction (avoid overlap on mobile) ---------- */
