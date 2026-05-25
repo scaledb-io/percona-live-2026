@@ -34,16 +34,20 @@ html.dark {
   --shadow: 0 0 24px rgba(31,143,255,0.08);
 }
 
+/* The slide-content element has the canonical 1280×720 design dimensions.
+   Make IT the container-query context so children can size with cqh/cqw.
+   (Putting container-type: size on .slidev-layout would collapse it to 0×0
+   because it has no explicit width/height of its own.) */
+.slidev-slide-content {
+  container-type: size;
+  container-name: slide;
+}
+
 /* ---------- Globals ---------- */
 .slidev-layout {
   font-family: 'Space Grotesk', system-ui, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-primary);
-  /* Make every slide a container-query context so child elements (code,
-     headings, etc.) can size themselves with cqh/cqw units. Slidev scales
-     the whole canvas to fit the screen, so these stay proportional. */
-  container-type: size;
-  container-name: slide;
 }
 
 .slidev-layout h1 {
