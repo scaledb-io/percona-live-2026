@@ -96,34 +96,70 @@ Redpanda absorbs spikes and outages
 <!-- These four show up again in every war story. Plant them now. -->
 
 ---
-layout: image-right
-image: /graphics/g03_fanout.png
+layout: default
 ---
 
 # Capturing Change Without Re-Reading MySQL
 
-- Debezium reads the **binlog** — one connector per domain
-- `snapshot.mode = schema_only` → start at current binlog, capture only new changes
-- Redpanda (Kafka API): 3 nodes, RF=3, 64 partitions, topic per table
-- One durable log → many consumers, replayable
+- One Debezium connector **per domain** (orders, contacts, products, …)
+- `snapshot.mode: schema_only` → start at current binlog, never resnapshot history
+- Redpanda (Kafka API): **3 nodes, RF=3, 64 partitions**, topic per table
+- Why Redpanda: no ZooKeeper, simpler ops, NVMe nodes
 
-Why Redpanda: no ZooKeeper, simpler ops, NVMe nodes.
+```json {2-3|4-5|6-9|10-12|all}
+{
+  "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+  "database.include.list": "app_production",
+  "table.include.list":    "app_production.orders,app_production.orders_invoices,…",
+  "snapshot.mode":         "schema_only",
+  "decimal.handling.mode": "double",
+  "time.precision.mode":   "connect",
+  "transforms":            "unwrap",
+  "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+  "transforms.unwrap.delete.handling.mode": "rewrite",
+  "transforms.unwrap.drop.tombstones":      "true",
+  "binlog.buffer.size":    "131072"
+}
+```
 
-<!-- Why Redpanda over Kafka: simpler ops, no ZooKeeper, NVMe nodes. schema_only is the setup for the next big story (we bootstrap history differently). -->
+<!-- Why Redpanda over Kafka: simpler ops, no ZooKeeper, NVMe nodes. schema_only is the setup for the next big story (we bootstrap history differently). Click through the config: connector source → tables → snapshot mode → typing → tombstone handling → buffer. -->
 
 ---
-layout: image-right
-image: /graphics/g02_ch_internal.png
+layout: default
 ---
 
 # Kafka Engine → Materialized View → ReplacingMergeTree
 
-- MV does the typing & coalescing (MySQL decimals arrive as strings!)
-- `_version` lets `FINAL` collapse to the latest row at query time
+```sql {1-7|9-15|17-23|all}
+CREATE TABLE orders_kafka (
+  id UInt64, workspace_id UInt64, total_amount Nullable(Float64),
+  created_at Int64, updated_at Int64, __deleted Nullable(String)
+) ENGINE = Kafka SETTINGS
+  kafka_broker_list = '${REDPANDA_BROKERS}',
+  kafka_topic_list  = 'datalake.app.orders',
+  kafka_format      = 'JSONEachRow';
 
-The MV is also the PII firewall — see slide 13.
+CREATE TABLE analytics_orders (
+  id UInt64, workspace_id UInt64, total_amount Float64,
+  created_at DateTime64(3), updated_at DateTime64(3),
+  _version UInt64, _deleted UInt8 DEFAULT 0
+) ENGINE = ReplacingMergeTree(_version)
+PARTITION BY toYYYYMM(created_at)
+ORDER BY (workspace_id, id);
 
-<!-- The MV is the workhorse — it's also our PII firewall (slide 13). -->
+CREATE MATERIALIZED VIEW orders_mv TO analytics_orders AS
+SELECT id, workspace_id,
+  coalesce(total_amount, 0)              AS total_amount,
+  fromUnixTimestamp64Milli(created_at)   AS created_at,
+  fromUnixTimestamp64Milli(updated_at)   AS updated_at,
+  intDiv(updated_at, 1000)               AS _version,
+  if(__deleted = 'true', 1, 0)           AS _deleted
+FROM orders_kafka;
+```
+
+The MV does typing, coalescing, **and** acts as the PII firewall (slide 13).
+
+<!-- The MV is the workhorse — it's also our PII firewall (slide 13). Click through: Kafka source → RMT destination → MV transform. Note `__deleted` arriving as a string ('true'/'false'), MySQL decimals arriving as strings, timestamps as epoch ms. -->
 
 ---
 layout: image-right
@@ -148,27 +184,49 @@ image: /graphics/g05_tombstone.png
 
 # A Delete Is Just Another Event
 
-**WAR STORY**
+**WAR STORY** — Naïve consumers either drop real deletes or choke on tombstones (null-value records).
 
-- Kafka compaction emits **tombstones** (null-value records) on delete
-- Naïve consumers either drop real deletes or choke on nulls
-- Config fix: `delete.handling.mode = rewrite` · `drop.tombstones = true`
-- Deletes become `_deleted = 1` → analytics keep history, queries filter it out
+```json
+"transforms.unwrap.delete.handling.mode": "rewrite",
+"transforms.unwrap.drop.tombstones":      "true"
+```
+
+…and in the materialized view:
+
+```sql
+if(__deleted = 'true', 1, 0) AS _deleted
+```
+
+Result: deletes become `_deleted = 1` — history kept, churned rows still queryable.
 
 <!-- Explain what a tombstone is for the half of the room that's never hit it. Soft-delete means we can still report on churned/cancelled rows. -->
 
 ---
-layout: image-right
-image: /graphics/g06_rmt_dedup.png
+layout: default
 ---
 
 # Two Ways Dedup Silently Fails
 
-**WAR STORY**
+**WAR STORY** — Mutable ORDER BY columns. Cross-partition rows. Either one quietly keeps duplicates. Found via row-count drift: **12.68% extra rows** on one table.
 
-- **Mutable columns in ORDER BY:** changing `user_id` made RMT keep BOTH rows
-- **Cross-partition dedup doesn't exist:** duplicates across months
-- **RULES:** only immutable columns in ORDER BY; never partition on anything CDC can change
+```sql
+-- Before: ORDER BY uses a column that can change after insert → BOTH versions kept
+ENGINE = ReplacingMergeTree(_version)
+PARTITION BY toYYYYMM(created_at)
+ORDER BY (site_id, id)              -- site_id was being reassigned
+
+-- Fix: rebuild with immutable-only sort key, swap atomically
+CREATE TABLE analytics_courses_new (...)
+ENGINE = ReplacingMergeTree(_version)
+PARTITION BY toYYYYMM(created_at)
+ORDER BY (id);                      -- id never changes
+
+INSERT INTO analytics_courses_new SELECT * FROM analytics_courses;
+OPTIMIZE TABLE analytics_courses_new FINAL;
+EXCHANGE TABLES analytics_courses AND analytics_courses_new;
+```
+
+**Rules:** only immutable columns in `ORDER BY` · never partition on anything CDC can mutate.
 
 <!-- RMT dedups *within a partition, by sort key*. Violate either and it quietly keeps duplicates. The 12.68% number is real and required a full reload. -->
 
@@ -178,17 +236,28 @@ layout: default
 
 # The Connector That Lied About Being Fine
 
-**WAR STORY**
+**WAR STORY** — One large MySQL transaction overflowed `binlog.buffer.size`. Connector said RUNNING. Offsets froze.
 
-- A large MySQL transaction overflowed `binlog.buffer.size` (16 KB default)
-- Connector showed **RUNNING** — but committed zero offsets, lag grew forever
-- Shared binlog stream → one bad transaction stalled **every** workspace connector
-- Fix: buffer 16 KB → 128 KB; monitor **offset progress**, never status alone
+```json
+GET /connectors/orders-connector/status
+{
+  "connector": { "state": "RUNNING" },
+  "tasks":     [{ "state": "RUNNING", "trace": null }]
+}
+// debezium.offsets topic: same binlog position for 6+ hours
+```
 
-> API Status: **RUNNING** · Actual Lag: **∞ (0 offsets)**
-> Monitor progress, not status
+```ini
+binlog.buffer.size = 131072   ; 16 KB default → 128 KB
+max.batch.size     = 2048
+max.queue.size     = 8192
+```
 
-<!-- The scariest failures are the silent ones. Health = data moving, not an API saying "RUNNING". -->
+- Shared binlog stream → one stuck transaction stalled **every** workspace connector
+- Health = **data moving**, not an API status field
+- Compare connector binlog position vs `SHOW MASTER STATUS` — that's the truth
+
+<!-- The scariest failures are the silent ones. Health = data moving, not an API saying "RUNNING". The fix script: poll connector offsets against MySQL master status; alert on files-behind, not on state strings. -->
 
 ---
 layout: default
@@ -196,32 +265,57 @@ layout: default
 
 # When NULL Isn't False
 
-**WAR STORY**
+**WAR STORY** — Rails booleans have three states: `0 (false)` · `1 (true)` · `NULL (legacy/unset)`. We assumed NULL meant not-anonymous. It didn't. **+620M rows backfilled.**
 
-Rails booleans have three states: `0 (false)` · `1 (true)` · `NULL (legacy/unset)`
+```sql
+-- The bug: pulled in every NULL-anonymous legacy contact
+WHERE anonymous = 0
 
-**+620M rows backfilled**
+-- Worse: `anonymous` is a generated column lazily synced from email/phone.
+-- Even = 0 lied for newly-inserted rows.
 
-- Rails booleans have three states: 0, 1, NULL (legacy/unset)
-- We assumed NULL = not anonymous → backfilled **~620M** extra rows
-- Worse: a lazily-synced generated column meant even `= 0` was wrong
-- Fix: filter on source fields (email/phone), not derived flags
+-- Fix: filter on the *source* identity fields, not the derived flag
+SELECT id, workspace_id, ...
+FROM mysql(app_production, table='contacts')
+WHERE (email_address IS NOT NULL AND email_address != '')
+   OR (phone_number  IS NOT NULL AND phone_number  != '');
+```
 
-`mysql()` federation doesn't push down ORDER BY/LIMIT — treat as full scan.
+`mysql()` federation doesn't push down `ORDER BY` / `LIMIT` — treat it as a full table scan and chunk by `id` range yourself.
 
 <!-- CDC faithfully replicates your source's quirks. Know your application's data semantics, not just the column type. Also drop the federation note: `mysql()` doesn't push down ORDER BY/LIMIT — treat it as a full scan. -->
 
 ---
-layout: image-right
-image: /graphics/g07_pii_firewall.png
+layout: default
 ---
 
 # PII Never Reaches the Analytics Tables
 
-- PII columns (names, addresses, phone, emails) **excluded at Debezium**
-- The **Materialized View** is a hard boundary — selects only safe columns
-- Contacts identified by presence of email/phone, but values aren't stored raw
-- Analysts query rich behavior; sensitive fields simply don't exist downstream
+PII is excluded **at Debezium** — sensitive bytes never enter the topic. The MV is the second hard boundary: explicit column list, no `SELECT *`.
+
+```json
+"column.exclude.list":
+  "app.orders.shipping_address_first_name,
+   app.orders.shipping_address_last_name,
+   app.orders.shipping_address_phone_number,
+   app.orders.billing_address_street_one,
+   app.orders.billing_address_street_two,
+   app.orders.phone_number,
+   app.orders.notes,
+   app.orders.encryption_key"
+```
+
+```sql
+-- Contacts MV: PII → presence flags only
+SELECT id, workspace_id,
+  if(email_address  != '', 1, 0) AS has_email,
+  if(phone_number   != '', 1, 0) AS has_phone,
+  if(first_name     != '', 1, 0) AS has_first_name,
+  ...
+FROM contacts_kafka;
+```
+
+Analysts get rich behavior. Sensitive values simply don't exist downstream.
 
 <!-- This is privacy-by-construction. There's no "remember to mask" — the data physically isn't there. Compliance and engineering both relax. -->
 
@@ -240,18 +334,31 @@ image: /graphics/g08_mcp_gateway.png
 <!-- As AI agents touch internal data, the access layer is the control plane. We assume the agent is curious and untrusted; the gateway enforces the rules. -->
 
 ---
-layout: image-right
-image: /graphics/g09_integrity.png
+layout: default
 ---
 
 # Proving the Lake Matches the Source
 
-- `verify-cdc-integrity.rb`: **CRC scan** (count + checksums per ID batch)
-- Mismatch? **Deep scan** only the bad batches (row-by-row)
-- **Fix** mode repairs from MySQL; re-verify — never trust row counts alone
-- Time-fenced to ignore in-flight CDC lag
+Cheap fingerprint per ID batch — find where to look *before* doing row comparisons.
 
-<!-- Drift is inevitable at billions of rows. The trick is a cheap fingerprint that finds *where* to look before doing expensive row comparisons. -->
+```sql
+-- Per-batch fingerprint, run against source MySQL and target in parallel
+SELECT
+  COUNT(*),
+  COALESCE(SUM(id), 0)                          AS id_sum,
+  COALESCE(SUM(UNIX_TIMESTAMP(created_at)), 0)  AS created_sum,
+  COALESCE(SUM(UNIX_TIMESTAMP(updated_at)), 0)  AS updated_sum
+FROM orders
+WHERE id BETWEEN :batch_min AND :batch_max
+  AND updated_at < :fence_time;   -- ignore in-flight CDC lag
+```
+
+- **CRC scan** all tables → list mismatched batches in minutes
+- **Deep scan** only bad batches → row-by-row column compare
+- **Fix mode**: `REPLACE INTO` target from source; re-verify
+- Time fence makes results deterministic during live replication
+
+<!-- Drift is inevitable at billions of rows. The trick is a cheap fingerprint that finds *where* to look before doing expensive row comparisons. Time fence: only compare rows older than script start time, so in-flight CDC lag doesn't cause false positives. -->
 
 ---
 layout: image-right
