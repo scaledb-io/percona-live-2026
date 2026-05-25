@@ -39,6 +39,11 @@ html.dark {
   font-family: 'Space Grotesk', system-ui, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-primary);
+  /* Make every slide a container-query context so child elements (code,
+     headings, etc.) can size themselves with cqh/cqw units. Slidev scales
+     the whole canvas to fit the screen, so these stay proportional. */
+  container-type: size;
+  container-name: slide;
 }
 
 .slidev-layout h1 {
@@ -92,6 +97,12 @@ html.dark {
   border: 1px solid var(--border-soft);
   border-radius: 8px;
   box-shadow: var(--shadow);
+  /* Cap height so a too-tall block can't break layout; auto-shrink font
+     within a sane range using container-query height units. */
+  max-height: 78cqh;
+  overflow: auto;
+  font-size: clamp(0.65rem, 2.2cqh, 1rem);
+  line-height: 1.45;
 }
 
 /* ---------- Cover / title ---------- */
@@ -133,8 +144,11 @@ html.dark {
   margin-bottom: 18px;
 }
 .slidev-layout.zoom-code pre {
-  font-size: 0.95em;
-  line-height: 1.35;
+  /* On zoom-code slides we have more vertical real-estate — allow the font to
+     ride a bit larger and tighten line-height. */
+  max-height: 88cqh;
+  font-size: clamp(0.8rem, 2.6cqh, 1.15rem);
+  line-height: 1.4;
   padding: 16px 20px;
 }
 .slidev-layout.zoom-code pre code {

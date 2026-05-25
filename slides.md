@@ -12,6 +12,8 @@ drawings:
 transition: fade
 mdc: true
 colorSchema: light
+aspectRatio: '16/9'
+canvasWidth: 1280
 ---
 
 # Streaming MySQL Changes to ClickHouse
