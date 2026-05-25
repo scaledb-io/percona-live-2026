@@ -168,3 +168,26 @@ html.dark {
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
+
+/* ---------- Nav controls: fade until interaction (avoid overlap on mobile) ---------- */
+.slidev-nav-controls,
+#slidev-nav-controls,
+.slidev-page .slidev-nav-controls {
+  opacity: 0.15;
+  transition: opacity 0.25s ease;
+}
+.slidev-nav-controls:hover,
+.slidev-nav-controls:focus-within,
+.slidev-nav-controls:active {
+  opacity: 1;
+}
+
+/* Mobile: give slide content room at the bottom so the toolbar doesn't sit on top of copy */
+@media (max-width: 768px) {
+  .slidev-layout {
+    padding-bottom: 56px;
+  }
+  .slidev-nav-controls {
+    opacity: 0.4;
+  }
+}
