@@ -133,11 +133,13 @@ html.dark {
   margin-bottom: 18px;
 }
 .slidev-layout.zoom-code pre {
-  font-size: 1.05em;
-  line-height: 1.5;
+  font-size: 0.95em;
+  line-height: 1.35;
+  padding: 16px 20px;
 }
 .slidev-layout.zoom-code pre code {
   font-size: inherit;
+  line-height: inherit;
 }
 
 /* ---------- Stat card helper (used by s03 results-style slides) ---------- */

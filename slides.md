@@ -160,30 +160,28 @@ class: zoom-code
 # Kafka Engine → Materialized View → ReplacingMergeTree
 ## — the three CREATE statements
 
-```sql {1-7|9-15|17-23|all}
+```sql {1-6|8-13|15-22|all}
 CREATE TABLE orders_kafka (
   id UInt64, workspace_id UInt64, total_amount Nullable(Float64),
   created_at Int64, updated_at Int64, __deleted Nullable(String)
 ) ENGINE = Kafka SETTINGS
   kafka_broker_list = '${REDPANDA_BROKERS}',
-  kafka_topic_list  = 'datalake.app.orders',
-  kafka_format      = 'JSONEachRow';
-
+  kafka_topic_list  = 'datalake.app.orders', kafka_format = 'JSONEachRow';
+-- ───────────────────────────────────────────────────────────────
 CREATE TABLE analytics_orders (
   id UInt64, workspace_id UInt64, total_amount Float64,
   created_at DateTime64(3), updated_at DateTime64(3),
   _version UInt64, _deleted UInt8 DEFAULT 0
 ) ENGINE = ReplacingMergeTree(_version)
-PARTITION BY toYYYYMM(created_at)
-ORDER BY (workspace_id, id);
-
-CREATE MATERIALIZED VIEW orders_mv TO analytics_orders AS
-SELECT id, workspace_id,
-  coalesce(total_amount, 0)              AS total_amount,
-  fromUnixTimestamp64Milli(created_at)   AS created_at,
-  fromUnixTimestamp64Milli(updated_at)   AS updated_at,
-  intDiv(updated_at, 1000)               AS _version,
-  if(__deleted = 'true', 1, 0)           AS _deleted
+PARTITION BY toYYYYMM(created_at) ORDER BY (workspace_id, id);
+-- ───────────────────────────────────────────────────────────────
+CREATE MATERIALIZED VIEW orders_mv TO analytics_orders AS SELECT
+  id, workspace_id,
+  coalesce(total_amount, 0)            AS total_amount,
+  fromUnixTimestamp64Milli(created_at) AS created_at,
+  fromUnixTimestamp64Milli(updated_at) AS updated_at,
+  intDiv(updated_at, 1000)             AS _version,
+  if(__deleted = 'true', 1, 0)         AS _deleted
 FROM orders_kafka;
 ```
 
