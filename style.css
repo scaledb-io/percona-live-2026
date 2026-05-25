@@ -151,12 +151,12 @@ html.dark {
 }
 .slidev-layout.zoom-code pre,
 .slidev-layout.zoom-code pre.slidev-code {
-  /* On zoom-code slides we have more vertical real-estate — allow the font
-     to ride a bit larger and tighten line-height. */
+  /* On zoom-code slides allow a bit more font, tighten line-height. Upper
+     bound calibrated so a ~22-line SQL block still fits without scrolling. */
   max-height: 88cqh;
-  font-size: clamp(1rem, 2.9cqh, 1.3rem) !important;
-  line-height: 1.4 !important;
-  padding: 16px 20px;
+  font-size: clamp(0.95rem, 2.4cqh, 1.15rem) !important;
+  line-height: 1.35 !important;
+  padding: 14px 18px;
 }
 .slidev-layout.zoom-code pre code {
   font-size: inherit;
