@@ -48,6 +48,12 @@ html.dark {
   font-family: 'Space Grotesk', system-ui, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-primary);
+  /* Vertically center content. Sparse slides float to the middle of the canvas
+     instead of clinging to the top with a huge empty bottom; dense slides
+     naturally fill the available room and look the same. */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   /* Smooth color crossfade when toggling dark mode via `d` */
   transition:
     background-color 0.25s ease,
@@ -66,6 +72,7 @@ html.dark {
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text-primary);
+  font-size: 2.6em;
 }
 /* Short cyan accent line under titles. Skipped on the title slide,
    zoom-code slides (which have a subtitle right after), and the closing. */
@@ -97,8 +104,11 @@ html.dark {
 .slidev-layout p,
 .slidev-layout li {
   color: var(--text-secondary);
-  font-size: 1.3rem;
+  font-size: 1.55rem;
   line-height: 1.5;
+}
+.slidev-layout li {
+  margin-bottom: 0.55em;
 }
 
 .slidev-layout strong {
