@@ -13,7 +13,7 @@ html:not(.dark) {
   --text-primary: #0D1117;
   --text-secondary: #1F2937;
   --text-muted: #6B7280;
-  --accent-cyan: #0B6FD1;        /* darker on light for contrast */
+  --accent-cyan: #0A8FBE;        /* ScaleDB brand cyan, lightness-adjusted for AA contrast on light bg */
   --accent-amber: #B57500;
   --border-soft: #E5E7EB;
   --code-bg: #F3F4F6;
@@ -27,7 +27,7 @@ html.dark {
   --text-primary: #F0F6FC;
   --text-secondary: #C9D1D9;
   --text-muted: #8B949E;
-  --accent-cyan: #1F8FFF;
+  --accent-cyan: #1EB4E6;        /* ScaleDB brand cyan, exact from scaledb.io */
   --accent-amber: #FFB020;
   --border-soft: #30363D;
   --code-bg: #161B22;
