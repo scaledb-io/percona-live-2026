@@ -67,14 +67,14 @@ layout: default
     <div class="stat-label">Redpanda partitions (RF=3)</div>
   </div>
   <div class="stat-card">
-    <div class="stat-number">~$2.7k</div>
+    <div class="stat-number">~$4k</div>
     <div class="stat-label">Full production lake cost/mo</div>
   </div>
 </div>
 
 <!--
 (~45s)
-Quick sense of scale before we dig in. 80 billion+ events landed, 35 terabytes of analytical data, 64 Redpanda partitions at RF=3 carrying the stream. And the punchline: the full production lake costs us around twenty-seven hundred dollars a month — about the price of a few RDS instances. That's the budget number to hold onto.
+Quick sense of scale before we dig in. 80 billion+ events landed, 35 terabytes of analytical data, 64 Redpanda partitions at RF=3 carrying the stream. And the punchline: the full production lake costs us around four thousand dollars a month — less than a few oversized RDS instances. That's the budget number to hold onto.
 → Next: how the whole pipeline fits together.
 -->
 
@@ -678,11 +678,11 @@ layout: default
   </div>
 </div>
 
-All of it on **~$2.7k/month** — for a full real-time lake of 80B+ events.
+All of it on **~$4k/month** — for a full real-time lake of 80B+ events.
 
 <!--
 (~60s)
-Was it worth it? Three numbers say yes. Analysts used to wait minutes for a dashboard to load — now they get answers in seconds. Cold-starting the lake used to be a multi-day project that risked taking down the primary — now it's afternoon work that never touches production. And CDC lag went from minutes to seconds, which is the difference between "this dashboard is broken" and "this dashboard is live." Each one maps to a decision from slide five: ClickHouse plus RMT, the Parquet bootstrap, and Redpanda buffering. And the whole thing runs for about $2,700 a month — less than a few oversized RDS instances.
+Was it worth it? Three numbers say yes. Analysts used to wait minutes for a dashboard to load — now they get answers in seconds. Cold-starting the lake used to be a multi-day project that risked taking down the primary — now it's afternoon work that never touches production. And CDC lag went from minutes to seconds, which is the difference between "this dashboard is broken" and "this dashboard is live." Each one maps to a decision from slide five: ClickHouse plus RMT, the Parquet bootstrap, and Redpanda buffering. And the whole thing runs for about $4,000 a month — less than a few oversized RDS instances.
 → Next: five lessons in one slide.
 -->
 
