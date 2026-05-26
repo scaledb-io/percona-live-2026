@@ -48,17 +48,26 @@ html.dark {
   font-family: 'Space Grotesk', system-ui, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-primary);
-  /* Vertically center content. Sparse slides float to the middle of the canvas
-     instead of clinging to the top with a huge empty bottom; dense slides
-     naturally fill the available room and look the same. */
+  /* Title pinned at top; body content centers in remaining space. This is
+     done with two auto margins: the first non-title element gets
+     margin-top: auto (eats free space above), and the last child gets
+     margin-bottom: auto (eats free space below). Result: body block sits
+     vertically centered in the area below the title. If there's an h2
+     subtitle right after the h1, treat it as part of the title block. */
   display: flex;
   flex-direction: column;
-  justify-content: center;
   /* Smooth color crossfade when toggling dark mode via `d` */
   transition:
     background-color 0.25s ease,
     color 0.25s ease,
     border-color 0.25s ease;
+}
+.slidev-layout > h1:first-child + :not(h2),
+.slidev-layout > h1:first-child + h2 + * {
+  margin-top: auto;
+}
+.slidev-layout > *:last-child {
+  margin-bottom: auto;
 }
 .slidev-layout * {
   transition:
@@ -211,9 +220,10 @@ html.dark {
 .slidev-layout.zoom-code pre,
 .slidev-layout.zoom-code pre.slidev-code {
   /* On zoom-code slides allow a bit more font, tighten line-height. Upper
-     bound calibrated so a ~22-line SQL block still fits without scrolling. */
-  max-height: 88cqh;
-  font-size: clamp(0.95rem, 2.4cqh, 1.15rem) !important;
+     bound calibrated so a ~22-line SQL block still fits without scrolling,
+     even when the title wraps to two lines (e.g. slide 9). */
+  max-height: 76cqh;
+  font-size: clamp(0.9rem, 2.25cqh, 1.1rem) !important;
   line-height: 1.35 !important;
   padding: 14px 18px;
 }
