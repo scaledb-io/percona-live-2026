@@ -4,8 +4,9 @@
   "type": "module",
   "scripts": {
     "dev": "slidev --open",
-    "build": "slidev build",
-    "build:pages": "slidev build --base /percona-live-2026/",
+    "build": "npm run notes && slidev build",
+    "build:pages": "npm run notes && slidev build --base /percona-live-2026/",
+    "notes": "node scripts/build-notes.mjs",
     "export": "slidev export",
     "export:pdf": "slidev export --output percona-live-2026.pdf"
   },

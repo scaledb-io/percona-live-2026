@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Speaker notes · Streaming MySQL Changes to ClickHouse</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #FAFAF7;
+  --bg-card: #FFFFFF;
+  --text: #0D1117;
+  --text-secondary: #1F2937;
+  --muted: #6B7280;
+  --border: #E5E7EB;
+  --accent: #0B6FD1;
+  --time: #B57500;
+  --code-bg: #F3F4F6;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0D1117;
+    --bg-card: #161B22;
+    --text: #F0F6FC;
+    --text-secondary: #C9D1D9;
+    --muted: #8B949E;
+    --border: #30363D;
+    --accent: #1F8FFF;
+    --time: #FFB020;
+    --code-bg: #161B22;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Space Grotesk', -apple-system, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 28px 20px 80px;
+}
+.top {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 18px;
+  margin-bottom: 24px;
+}
+.top h1 {
+  font-size: 1.4rem;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+}
+.top .sub {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.top .meta {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+.top .meta b {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.slide {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  scroll-margin-top: 16px;
+}
+.slide header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 10px;
+}
+.slide .num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+}
+.slide h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  font-weight: 700;
+  color: var(--text);
+}
+.note {
+  font-size: 0.98rem;
+  color: var(--text-secondary);
+}
+.note.empty {
+  color: var(--muted);
+  font-style: italic;
+}
+.note .time {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--time);
+  letter-spacing: 0.08em;
+  background: color-mix(in srgb, var(--time) 14%, transparent);
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-right: 8px;
+  vertical-align: 0.06em;
+}
+.note .next {
+  display: inline-block;
+  margin-top: 8px;
+  font-weight: 600;
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+.note code {
+  background: var(--code-bg);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.88em;
+}
+.toc {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.toc a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  display: inline-block;
+  padding: 3px 8px;
+  margin: 2px;
+  border-radius: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+.toc a:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="top">
+    <h1>Speaker notes</h1>
+    <div class="sub">Streaming MySQL Changes to ClickHouse · Javier Zon · Percona Live 26</div>
+    <div class="meta">
+      <span><b>25</b> slides</span>
+      <span>Content: <b>~25:20</b></span>
+      <span>Slot: <b>30 min</b> · Q&amp;A: <b>~5 min</b></span>
+    </div>
+  </div>
+  
+  <article class="slide" id="s1">
+    <header>
+      <span class="num">01</span>
+      <h2>Streaming MySQL Changes to ClickHouse</h2>
+    </header>
+    <div class="note"><span class="time">~25s</span><br>Hi everyone — I'm Javier Zon, founder of ScaleDB. For the last couple of years we've been streaming every row change from a production MySQL fleet into a ClickHouse data lake — 80 billion events, 35 terabytes, live. Today I want to walk you through the architecture, and more importantly, the scars we earned building it.<br><div class="next">→ Next: why we had to build this in the first place.</div></div>
+  </article>
+
+  <article class="slide" id="s2">
+    <header>
+      <span class="num">02</span>
+      <h2>Analytics Was Killing the Source Database</h2>
+    </header>
+    <div class="note"><span class="time">~40s</span><br>Analytics was killing the source database. We were running BI and dashboards against MySQL read replicas — slow, fragile, and constantly contended. Cross-domain joins across orders, contacts, and billing were timing out at billions of rows. We needed fresh analytics without ever touching the production write path. The goal was real-time CDC into a columnar store built for this job.<br><div class="next">→ Next: the scale we're actually moving.</div></div>
+  </article>
+
+  <article class="slide" id="s3">
+    <header>
+      <span class="num">03</span>
+      <h2>What We're Actually Moving</h2>
+    </header>
+    <div class="note"><span class="time">~45s</span><br>Quick sense of scale before we dig in. 80 billion+ events landed, 35 terabytes of analytical data, 64 Redpanda partitions at RF=3 carrying the stream. And the punchline: the full production lake costs us around twenty-seven hundred dollars a month — about the price of a few RDS instances. That's the budget number to hold onto.<br><div class="next">→ Next: how the whole pipeline fits together.</div></div>
+  </article>
+
+  <article class="slide" id="s4">
+    <header>
+      <span class="num">04</span>
+      <h2>The End-to-End Pipeline</h2>
+    </header>
+    <div class="note"><span class="time">~75s</span><br>Let me walk one row change end to end. A write hits MySQL — Debezium reads it from the binlog, never from a table. The change lands in Redpanda, partitioned by table, replicated three ways. ClickHouse pulls it through a Kafka engine table, a materialized view types and filters it — that MV is also our PII firewall — and it lands in a ReplacingMergeTree where BI tools and AI agents read it. The key word is loose coupling: Redpanda is a buffer, so if ClickHouse goes down for an hour, we lose nothing.<br><div class="next">→ Next: the four decisions that shaped everything downstream.</div></div>
+  </article>
+
+  <article class="slide" id="s5">
+    <header>
+      <span class="num">05</span>
+      <h2>Four Decisions That Shaped Everything</h2>
+    </header>
+    <div class="note"><span class="time">~60s</span><br>Four decisions show up in every war story I'm about to tell. One: ReplacingMergeTree with a version column, so the last writer wins. Two: soft deletes — a delete is a flag, not a row removal. Three: read-only and PII-safe by construction, so sensitive columns physically don't exist downstream. Four: buffer, don't couple — Redpanda absorbs everything. Plant these now; you'll see them again.<br><div class="next">→ Next: capturing change without re-reading MySQL.</div></div>
+  </article>
+
+  <article class="slide" id="s6">
+    <header>
+      <span class="num">06</span>
+      <h2>Capturing Change Without Re-Reading MySQL</h2>
+    </header>
+    <div class="note"><span class="time">~45s</span><br>One Debezium connector per domain — orders, contacts, products — so a stuck connector blasts only one workspace, not all of them. <code>snapshot.mode: schema_only</code> means we never resnapshot history; we start at the current binlog position. Redpanda gives us the Kafka API with no ZooKeeper, simpler ops, NVMe-backed nodes. Six settings do the real work — and they're on the next slide.<br><div class="next">→ Next: the actual connector config.</div></div>
+  </article>
+
+  <article class="slide" id="s7">
+    <header>
+      <span class="num">07</span>
+      <h2>Capturing Change Without Re-Reading MySQL</h2>
+    </header>
+    <div class="note"><span class="time">~75s</span><br>Five clicks. First: the MySQL connector. Then the table list, scoped per domain. <code>schema_only</code> plus <code>decimal.handling.mode: double</code> — that's the typing line; double loses a hair of precision but parses cleanly, where the default emits bytes. Then the unwrap transform with <code>delete.handling.mode: rewrite</code> and <code>drop.tombstones: true</code> — that converts deletes into a flag we control, and we'll come back to that in two slides. Finally the binlog buffer at 128k, which has its own war story coming up.<br><div class="next">→ Next: how the data lands in ClickHouse.</div></div>
+  </article>
+
+  <article class="slide" id="s8">
+    <header>
+      <span class="num">08</span>
+      <h2>Kafka Engine → Materialized View → ReplacingMergeTree</h2>
+    </header>
+    <div class="note"><span class="time">~45s</span><br>Three CREATE statements per table — that's the entire ClickHouse pattern. A Kafka engine table reading raw JSON from Redpanda, with everything Nullable because the source is messy. A ReplacingMergeTree with strict types — that's the queryable destination, owning <code>_version</code> and <code>_deleted</code>. And a materialized view in between that types, coalesces, and crucially acts as our PII firewall. We'll come back to that firewall later.<br><div class="next">→ Next: the three CREATE statements, side by side.</div></div>
+  </article>
+
+  <article class="slide" id="s9">
+    <header>
+      <span class="num">09</span>
+      <h2>Kafka Engine → Materialized View → ReplacingMergeTree</h2>
+    </header>
+    <div class="note"><span class="time">~90s</span><br>Top: the Kafka engine reads JSON, everything Nullable because we trust nothing yet. Middle: the RMT, strict types, partitioned by month, sorted by workspace and id — and notice <code>_version</code> is just <code>updated_at</code> in seconds, so last-writer-wins is automatic. Bottom is where the work happens: <code>coalesce</code> fills in defaults, <code>fromUnixTimestamp64Milli</code> converts epoch-ms back to real timestamps, and the literal string <code>'true'</code> from <code>__deleted</code> becomes a 1. Three statements, repeated per table. That's the whole pattern.<br><div class="next">→ Next: the first war story — bootstrapping 9 billion rows.</div></div>
+  </article>
+
+  <article class="slide" id="s10">
+    <header>
+      <span class="num">10</span>
+      <h2>We Did NOT Load 9 Billion Rows Through Debezium</h2>
+    </header>
+    <div class="note"><span class="time">~90s</span><br>If you take one thing from this talk, take this: CDC is for the stream, not for hauling history. Our first instinct was to let Debezium snapshot nine billion rows. It would have taken days, hammered the replica, and any connector hiccup mid-run meant starting over. So we split it. Take an RDS snapshot — a point-in-time copy that doesn't touch prod. Export it to Parquet on S3, columnar and compressed. Bulk-load straight into the ReplacingMergeTree — 80 billion rows in hours. Then start CDC from the binlog position the snapshot was taken at, and the delta catches up in minutes. The production primary never felt it.<br><div class="next">→ Next: deletes — they're not what you think.</div></div>
+  </article>
+
+  <article class="slide" id="s11">
+    <header>
+      <span class="num">11</span>
+      <h2>A Delete Is Just Another Event</h2>
+    </header>
+    <div class="note"><span class="time">~75s</span><br>A delete in MySQL becomes a Kafka tombstone — same key, null value — and naive consumers either drop the delete entirely or crash on the null. Debezium's <code>unwrap</code> transform with <code>delete.handling.mode: rewrite</code> turns that into a real event with <code>__deleted = 'true'</code>, and we tell it to drop the actual tombstone. The MV maps that string to a <code>_deleted</code> flag. The row stays in ClickHouse, queries filter it out by default — but we can still report on churned customers and cancelled orders, because the history is intact.<br><div class="next">→ Next: how RMT silently keeps duplicates.</div></div>
+  </article>
+
+  <article class="slide" id="s12">
+    <header>
+      <span class="num">12</span>
+      <h2>Two Ways Dedup Silently Fails</h2>
+    </header>
+    <div class="note"><span class="time">~60s</span><br>We learned this one the hard way. ReplacingMergeTree dedups within a partition, by sort key — violate either condition and it quietly keeps both copies. First failure: a mutable column in your ORDER BY — if it changes after insert, you get two rows with different sort keys and RMT thinks they're different rows. Second: cross-partition duplicates — RMT never dedups across partitions. We caught it by row-count drift: 12.68% extra rows on one table. Full reload required. The rule: only immutable columns in ORDER BY, and never partition on anything CDC can mutate.<br><div class="next">→ Next: the actual rebuild we ran in production.</div></div>
+  </article>
+
+  <article class="slide" id="s13">
+    <header>
+      <span class="num">13</span>
+      <h2>Two Ways Dedup Silently Fails</h2>
+    </header>
+    <div class="note"><span class="time">~75s</span><br>Top: the broken table — <code>site_id</code> was being reassigned by an internal process, so the sort key kept shifting. Middle: the rebuild, sorted by <code>id</code> only, which never changes. Bottom: the atomic swap — INSERT into the new table, OPTIMIZE FINAL to collapse duplicates one last time, then EXCHANGE TABLES to flip them in a single metadata operation. One trick we learned: drop the MV before the INSERT so CDC buffers in Redpanda during the rebuild, then recreate it after the swap. Zero data loss.<br><div class="next">→ Next: the connector that lied about being healthy.</div></div>
+  </article>
+
+  <article class="slide" id="s14">
+    <header>
+      <span class="num">14</span>
+      <h2>The Connector That Lied About Being Fine</h2>
+    </header>
+    <div class="note"><span class="time">~60s</span><br>The scariest failures are the silent ones. One unusually large MySQL transaction overflowed Debezium's binlog buffer — and the connector dutifully reported RUNNING. Offsets froze for six hours. Because connectors share the binlog stream, one stuck transaction stalled every workspace at once. The lesson: health is data moving, not an API status field. We now compare connector binlog position against <code>SHOW MASTER STATUS</code> — that's the truth. The fix was 16k to 128k on the buffer, plus per-partition offset monitoring.<br><div class="next">→ Next: what RUNNING actually looked like, and the fix.</div></div>
+  </article>
+
+  <article class="slide" id="s15">
+    <header>
+      <span class="num">15</span>
+      <h2>The Connector That Lied About Being Fine</h2>
+    </header>
+    <div class="note"><span class="time">~75s</span><br>Top: the status API. Both <code>connector</code> and <code>tasks</code> say RUNNING, <code>trace</code> is null — looks perfect. There's no exception path inside Debezium for "I'm internally stuck on a buffer," so the status field just stays green. The line below is what told us the truth: the offsets topic showed the same binlog position for six hours. Bottom is the fix — bump the binlog buffer to 128k, raise batch and queue sizes for headroom on similar bursts. Buffer size was the real fix; the others are insurance.<br><div class="next">→ Next: the boolean that added 620 million rows.</div></div>
+  </article>
+
+  <article class="slide" id="s16">
+    <header>
+      <span class="num">16</span>
+      <h2>When NULL Isn't False</h2>
+    </header>
+    <div class="note"><span class="time">~60s</span><br>Rails booleans have three states: zero, one, and NULL for legacy or unset rows. We assumed NULL meant "not anonymous" and backfilled — that added 620 million extra rows. Worse: the <code>anonymous</code> column is a generated column lazily synced from email and phone, so even <code>= 0</code> lied for newly-inserted rows. CDC faithfully replicates your source's quirks; you have to know the application's data semantics, not just the column type. The fix was to filter on the source identity fields directly. Bonus: <code>mysql()</code> federation doesn't push down ORDER BY or LIMIT — treat it as a full scan and chunk by id range yourself.<br><div class="next">→ Next: the buggy query and the fix.</div></div>
+  </article>
+
+  <article class="slide" id="s17">
+    <header>
+      <span class="num">17</span>
+      <h2>When NULL Isn't False</h2>
+    </header>
+    <div class="note"><span class="time">~75s</span><br>Top: the obvious-looking bug — <code>WHERE anonymous = 0</code> looks fine, but it pulled in every legacy contact with NULL. Middle: the deeper gotcha — <code>anonymous</code> is generated and lazily synced, so it's stale on newly-inserted rows too. Bottom is the correct filter: check the actual identity fields, email and phone. They're authoritative; the derived flag is downstream of them. Rule of thumb: never trust a flag if you can check what it's derived from.<br><div class="next">→ Next: how we keep PII out of analytics entirely.</div></div>
+  </article>
+
+  <article class="slide" id="s18">
+    <header>
+      <span class="num">18</span>
+      <h2>PII Never Reaches the Analytics Tables</h2>
+    </header>
+    <div class="note"><span class="time">~45s</span><br>PII never reaches the analytics tables — privacy by construction. Two hard boundaries: at the connector, Debezium's <code>column.exclude.list</code> drops PII out of the binlog stream before it ever hits Redpanda. At the materialized view, explicit column lists mean nothing sensitive can land downstream even if the connector misses one. Contacts are identified by presence of email or phone, never by the values themselves. There's no "remember to mask" — the data physically isn't there.<br><div class="next">→ Next: the two boundaries side by side.</div></div>
+  </article>
+
+  <article class="slide" id="s19">
+    <header>
+      <span class="num">19</span>
+      <h2>PII Never Reaches the Analytics Tables</h2>
+    </header>
+    <div class="note"><span class="time">~60s</span><br>Left: the connector boundary. <code>column.exclude.list</code> strips PII at the source — names, addresses, phone numbers, encryption keys — those bytes never enter the topic. Right: the materialized view boundary. Even on tables where we have to ingest a column, the MV maps it to a presence flag — <code>has_email</code>, <code>has_phone</code>. Two independent defenses; either one alone would have been enough, but together they mean a connector misconfiguration doesn't become a compliance incident.<br><div class="next">→ Next: letting AI agents query this lake safely.</div></div>
+  </article>
+
+  <article class="slide" id="s20">
+    <header>
+      <span class="num">20</span>
+      <h2>Letting AI Agents Query the Lake — Safely</h2>
+    </header>
+    <div class="note"><span class="time">~90s</span><br>As AI agents start touching internal data, the access layer becomes the control plane. We assume the agent is curious and untrusted — that's the threat model. The ScaleDB MCP server sits between any agent and ClickHouse: GitHub OAuth for org-scoped identity, SELECT-only by enforcement, table whitelist, every query audited. PII tables — users, contacts, memberships — are blocked outright at the gateway. The result: agents get the full analytical power of the lake, and they cannot read sensitive data even by accident, because the path to that data doesn't exist for them. Treat your agents like third-party software, not like employees.<br><div class="next">→ Next: proving the lake matches the source.</div></div>
+  </article>
+
+  <article class="slide" id="s21">
+    <header>
+      <span class="num">21</span>
+      <h2>Proving the Lake Matches the Source</h2>
+    </header>
+    <div class="note"><span class="time">~45s</span><br>Drift is inevitable at billions of rows — the trick is finding where to look before you compare anything expensive. We run a cheap CRC scan across every table to surface mismatched ID batches in minutes. Then a deep scan only on those bad batches, row by row. A fix mode does REPLACE INTO from source and re-verifies. The critical trick: time-fence every query to before script start, so in-flight CDC lag doesn't generate false positives.<br><div class="next">→ Next: the actual fingerprint query.</div></div>
+  </article>
+
+  <article class="slide" id="s22">
+    <header>
+      <span class="num">22</span>
+      <h2>Proving the Lake Matches the Source</h2>
+    </header>
+    <div class="note"><span class="time">~60s</span><br>Same query, both sides, in parallel. Four aggregates per batch: count, sum of ids, sum of created timestamps, sum of updated timestamps. Sum-of-ids catches missing or extra rows; sum-of-timestamps catches stale updates the count would miss. The batch range keeps each query bounded. And that last line — the time fence — is the magic: both sides see the same logical snapshot regardless of replication lag. Two ints and two longs per batch, runs across a billion rows in minutes.<br><div class="next">→ Next: what all of this got us.</div></div>
+  </article>
+
+  <article class="slide" id="s23">
+    <header>
+      <span class="num">23</span>
+      <h2>What We Got</h2>
+    </header>
+    <div class="note"><span class="time">~60s</span><br>Three numbers, each tied to a decision earlier in this talk. Queries that used to take minutes now return in seconds — that's ClickHouse plus the ReplacingMergeTree pattern. Cold-start dropped from days to hours — that's the Parquet bootstrap, not bootstrapping through CDC. CDC lag went from minutes to seconds — that's Redpanda absorbing spikes instead of coupling MySQL directly to ClickHouse. Safety came from the MV firewall and the MCP gateway. Each result maps directly to one of the four decisions we planted on slide five.<br><div class="next">→ Next: the lessons in one slide.</div></div>
+  </article>
+
+  <article class="slide" id="s24">
+    <header>
+      <span class="num">24</span>
+      <h2>If You Build One of These</h2>
+    </header>
+    <div class="note"><span class="time">~45s</span><br>This is the slide people photograph — pause here. If you build one of these: use CDC for the stream and snapshots for history. Never put a mutable column in your ORDER BY. Monitor offsets, not API status. Treat the MV as a hard PII firewall. And verify integrity with checksums, not row counts. Five rules — every one of them paid for in production.<br><div class="next">→ Next: questions, and where to find the code.</div></div>
+  </article>
+
+  <article class="slide" id="s25">
+    <header>
+      <span class="num">25</span>
+      <h2>Questions?</h2>
+    </header>
+    <div class="note"><span class="time">~45s — then opens ~5 min Q&amp;A</span><br>That's the talk — I'd love your questions. Two pointers before we open it up: scaledb.io is where we live, and the entire CDC platform we just walked through is open source at github.com/scaledb-io/cloud — you can self-host the exact pipeline from this talk. Find me after if we run out of time. Thanks for having me.<br>→ Q&amp;A.</div>
+  </article>
+
+  <div class="toc">
+    Jump to:
+    <a href="#s1">1</a><a href="#s2">2</a><a href="#s3">3</a><a href="#s4">4</a><a href="#s5">5</a><a href="#s6">6</a><a href="#s7">7</a><a href="#s8">8</a><a href="#s9">9</a><a href="#s10">10</a><a href="#s11">11</a><a href="#s12">12</a><a href="#s13">13</a><a href="#s14">14</a><a href="#s15">15</a><a href="#s16">16</a><a href="#s17">17</a><a href="#s18">18</a><a href="#s19">19</a><a href="#s20">20</a><a href="#s21">21</a><a href="#s22">22</a><a href="#s23">23</a><a href="#s24">24</a><a href="#s25">25</a>
+  </div>
+</div>
+</body>
+</html>
