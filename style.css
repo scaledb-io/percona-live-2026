@@ -261,6 +261,19 @@ html.dark {
   margin-top: 8px;
 }
 
+/* ---------- Closing emotional-beat line on the Lessons slide ---------- */
+.closing-line {
+  margin-top: 28px;
+  padding: 14px 22px;
+  border-left: 4px solid var(--accent-amber);
+  background: color-mix(in srgb, var(--accent-amber) 8%, transparent);
+  font-size: 1.15em;
+  font-weight: 600;
+  font-style: italic;
+  color: var(--text-primary);
+  border-radius: 0 6px 6px 0;
+}
+
 /* ---------- Bio slide (page 2) ---------- */
 .slidev-layout.bio h2 {
   /* "Founder, ScaleDB" sits as a subtitle directly under the name */

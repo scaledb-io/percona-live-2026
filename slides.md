@@ -624,7 +624,7 @@ layout: default
 
 <!--
 (~90s)
-As AI agents start touching internal data, the access layer becomes the control plane. We assume the agent is curious and untrusted — that's the threat model. The ScaleDB MCP server sits between any agent and ClickHouse: GitHub OAuth for org-scoped identity, SELECT-only by enforcement, table whitelist, every query audited. PII tables — users, contacts, memberships — are blocked outright at the gateway. The result: agents get the full analytical power of the lake, and they cannot read sensitive data even by accident, because the path to that data doesn't exist for them. Treat your agents like third-party software, not like employees.
+Quick framing before I describe this: we didn't build the MCP gateway because AI is fashionable. We built it because analysts and internal tooling needed safe read access to the lake, and "give them a Postgres user" wasn't going to fly. Once that gateway exists, agents are just another client. The threat model is the same: curious and untrusted. ScaleDB MCP sits between any client and ClickHouse — GitHub OAuth for org-scoped identity, SELECT-only by enforcement, table whitelist, every query audited. PII tables — users, contacts, memberships — are blocked outright. The result: agents get the full analytical power of the lake, and they cannot read sensitive data even by accident, because the path to that data doesn't exist for them.
 → Next: proving the lake matches the source.
 -->
 
@@ -727,9 +727,11 @@ layout: default
 - Treat the Materialized View as a **hard PII firewall**
 - Verify integrity with **checksums**, not just row counts
 
+<div class="closing-line">The hard part isn't moving data. It's operating the pipeline safely at scale.</div>
+
 <!--
 (~45s)
-This is the slide people photograph — pause here. If you build one of these: use CDC for the stream and snapshots for history. Never put a mutable column in your ORDER BY. Monitor offsets, not API status. Treat the MV as a hard PII firewall. And verify integrity with checksums, not row counts. Five rules — every one of them paid for in production.
+This is the slide people photograph — pause here. If you build one of these: use CDC for the stream and snapshots for history. Never put a mutable column in your ORDER BY. Monitor offsets, not API status. Treat the MV as a hard PII firewall. And verify integrity with checksums, not row counts. Five rules — every one of them paid for in production. And the meta-lesson I'll leave you with: the hard part isn't moving data — it's operating the pipeline safely at scale.
 → Next: questions, and where to find the code.
 -->
 
