@@ -261,6 +261,39 @@ html.dark {
   margin-top: 8px;
 }
 
+/* ---------- Bio slide (page 2) ---------- */
+.slidev-layout.bio h2 {
+  /* "Founder, ScaleDB" sits as a subtitle directly under the name */
+  font-size: 1.4em;
+  margin-top: 4px;
+  margin-bottom: 22px;
+  color: var(--accent-cyan);
+}
+.slidev-layout.bio em {
+  display: block;
+  margin-top: 22px;
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 1.05em;
+}
+.bio-links {
+  margin-top: 26px;
+  font-size: 0.95em;
+  color: var(--text-muted);
+}
+.bio-links a {
+  color: var(--text-secondary);
+  border-bottom: 1px dashed var(--border-soft) !important;
+}
+.bio-links a:hover {
+  color: var(--accent-cyan);
+  border-bottom-color: var(--accent-cyan) !important;
+}
+.bio-links .dot {
+  margin: 0 10px;
+  color: var(--border-soft);
+}
+
 /* ---------- War-story slides — red edge + rubber stamp ---------- */
 :root,
 html:not(.dark) { --war-red: #C62828; }
@@ -473,12 +506,43 @@ html.dark .event-logo {
   border-radius: 4px;
   font-size: 0.95em;
 }
-.cta-cards {
+.cta-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: 1fr auto;
+  gap: 22px;
   width: 100%;
   margin-top: 22px;
+  align-items: center;
+}
+.cta-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  width: 100%;
+}
+.qr-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.qr-block img {
+  width: 130px;
+  height: 130px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 6px;
+}
+html.dark .qr-block img {
+  filter: invert(1);
+}
+.qr-caption {
+  font-size: 0.7em;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
 }
 .cta-card {
   display: block;

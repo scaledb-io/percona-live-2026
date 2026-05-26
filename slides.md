@@ -27,7 +27,36 @@ Javier Zon · Founder, ScaleDB
 <!--
 (~25s)
 Hi everyone — I'm Javier Zon, founder of ScaleDB. For the last couple of years we've been streaming every row change from a production MySQL fleet into a ClickHouse data lake — 80 billion events, 35 terabytes, live. Today I want to walk you through the architecture, and more importantly, the scars we earned building it.
-→ Next: why we had to build this in the first place.
+→ Next: a bit about me, then why we had to build this.
+-->
+
+---
+layout: default
+class: bio
+---
+
+# Javier Zon
+
+## Founder, ScaleDB
+
+- Database and platform engineer with **15+ years** working on MySQL, distributed systems, and real-time data infrastructure
+- Former **Percona Remote DBA**, helping operate and troubleshoot production database systems at scale
+- Focused on modern data architectures combining **MySQL, CDC pipelines, streaming platforms, and ClickHouse**
+
+*Still occasionally surprised by what people run directly against production MySQL.*
+
+<div class="bio-links">
+  <a href="https://scaledb.io">scaledb.io</a>
+  <span class="dot">·</span>
+  <a href="https://www.linkedin.com/in/javierzon">linkedin.com/in/javierzon</a>
+  <span class="dot">·</span>
+  <a href="https://github.com/jtomaszon">github.com/jtomaszon</a>
+</div>
+
+<!--
+(~30s)
+Quick context before we dive in. I'm Javier — fifteen years on MySQL and the platforms around it, including a stint on the Percona Remote DBA team, where you see every way a production database can go sideways. These days I run ScaleDB, focused on modern data architectures that combine MySQL with CDC, streaming, and ClickHouse. Everything you'll see today comes from running that pattern in production — including, occasionally, getting surprised by what people still run directly against the source database.
+→ Next: the problem that pushed us to build this.
 -->
 
 ---
@@ -205,7 +234,7 @@ Three CREATE statements per table — that's the whole pattern.
 2. **`analytics_<table>`** — ReplacingMergeTree, the queryable destination, owns `_version` + `_deleted`
 3. **`<table>_mv`** — Materialized view that types, coalesces, and inserts into (2)
 
-The MV is also the **PII firewall** — we'll come back to that on slide 13.
+The MV is also the **PII firewall** — we'll come back to that shortly.
 
 <!--
 (~45s)
@@ -682,7 +711,7 @@ All of it on **~$4k/month** — for a full real-time lake of 80B+ events.
 
 <!--
 (~60s)
-Was it worth it? Three numbers say yes. Analysts used to wait minutes for a dashboard to load — now they get answers in seconds. Cold-starting the lake used to be a multi-day project that risked taking down the primary — now it's afternoon work that never touches production. And CDC lag went from minutes to seconds, which is the difference between "this dashboard is broken" and "this dashboard is live." Each one maps to a decision from slide five: ClickHouse plus RMT, the Parquet bootstrap, and Redpanda buffering. And the whole thing runs for about $4,000 a month — less than a few oversized RDS instances.
+Was it worth it? Three numbers say yes. Analysts used to wait minutes for a dashboard to load — now they get answers in seconds. Cold-starting the lake used to be a multi-day project that risked taking down the primary — now it's afternoon work that never touches production. And CDC lag went from minutes to seconds, which is the difference between "this dashboard is broken" and "this dashboard is live." Each one maps to one of the four decisions: ClickHouse plus RMT, the Parquet bootstrap, and Redpanda buffering. And the whole thing runs for about $4,000 a month — less than a few oversized RDS instances.
 → Next: five lessons in one slide.
 -->
 
@@ -717,6 +746,8 @@ class: closing
 
 <div class="closing-meta">Javier Zon · Founder, ScaleDB · <code>support@scaledb.io</code></div>
 
+<div class="cta-row">
+
 <div class="cta-cards">
   <a href="https://scaledb.io" class="cta-card">
     <div class="cta-card-label">Learn more about us</div>
@@ -726,6 +757,13 @@ class: closing
     <div class="cta-card-label">Open source CDC platform</div>
     <div class="cta-card-url">github.com/scaledb-io/cloud</div>
   </a>
+</div>
+
+<div class="qr-block">
+  <img src="/qr-cloud.svg" alt="QR — github.com/scaledb-io/cloud" />
+  <div class="qr-caption">Scan for the repo</div>
+</div>
+
 </div>
 
 <img src="/percona-live-2026-bay.png" class="event-logo-small" alt="Percona Live 26 · Bay Area" />

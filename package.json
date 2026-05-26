@@ -15,6 +15,10 @@
     "@slidev/theme-default": "^0.25.0",
     "@slidev/theme-seriph": "^0.25.0",
     "mermaid": "^11.15.0",
+    "qrcode": "^1.5.4",
     "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "playwright-chromium": "^1.60.0"
   }
 }
