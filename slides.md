@@ -140,7 +140,7 @@ Redpanda absorbs spikes and outages
 
 <!--
 (~60s)
-Four decisions show up in every war story I'm about to tell. One: ReplacingMergeTree with a version column, so the last writer wins. Two: soft deletes — a delete is a flag, not a row removal. Three: read-only and PII-safe by construction, so sensitive columns physically don't exist downstream. Four: buffer, don't couple — Redpanda absorbs everything. Plant these now; you'll see them again.
+Four decisions, all made before we wrote a single line of pipeline code. Get any one of them wrong and the whole thing falls over. ReplacingMergeTree with a version column gives us last-writer-wins dedup — without it CDC creates duplicates on every restart. Soft deletes mean a `DELETE` becomes a flag, so we can still report on churned rows. Read-only and PII-safe by construction means sensitive columns physically don't exist downstream — no "remember to mask." Buffer, don't couple — Redpanda absorbs anything MySQL throws at it. Watch for these four; every war story I'm about to tell is one of them paid for in production.
 → Next: capturing change without re-reading MySQL.
 -->
 
@@ -504,8 +504,8 @@ Contacts are identified by **presence** of email/phone, never by the values. Ana
 
 <!--
 (~45s)
-PII never reaches the analytics tables — privacy by construction. Two hard boundaries: at the connector, Debezium's `column.exclude.list` drops PII out of the binlog stream before it ever hits Redpanda. At the materialized view, explicit column lists mean nothing sensitive can land downstream even if the connector misses one. Contacts are identified by presence of email or phone, never by the values themselves. There's no "remember to mask" — the data physically isn't there.
-→ Next: the two boundaries side by side.
+You can't leak data you never stored. That's the whole idea behind this slide. We enforce PII safety at two boundaries, and there's no human between them. First boundary: Debezium's `column.exclude.list` strips sensitive columns out of the binlog stream before they ever hit Redpanda. Second boundary: every materialized view has an explicit column list — no `SELECT *` — so even if the first boundary misses one, the MV catches it. Contacts are identified by the presence of email or phone, never by the values themselves. Compliance stopped asking us to mask things; the things just aren't there.
+→ Next: the two boundaries side by side, in code.
 -->
 
 ---
@@ -678,12 +678,12 @@ layout: default
   </div>
 </div>
 
-Speed = ClickHouse + RMT · Cold-start = Parquet bootstrap · Safety = MV firewall + MCP gateway.
+All of it on **~$2.7k/month** — for a full real-time lake of 80B+ events.
 
 <!--
 (~60s)
-Three numbers, each tied to a decision earlier in this talk. Queries that used to take minutes now return in seconds — that's ClickHouse plus the ReplacingMergeTree pattern. Cold-start dropped from days to hours — that's the Parquet bootstrap, not bootstrapping through CDC. CDC lag went from minutes to seconds — that's Redpanda absorbing spikes instead of coupling MySQL directly to ClickHouse. Safety came from the MV firewall and the MCP gateway. Each result maps directly to one of the four decisions we planted on slide five.
-→ Next: the lessons in one slide.
+Was it worth it? Three numbers say yes. Analysts used to wait minutes for a dashboard to load — now they get answers in seconds. Cold-starting the lake used to be a multi-day project that risked taking down the primary — now it's afternoon work that never touches production. And CDC lag went from minutes to seconds, which is the difference between "this dashboard is broken" and "this dashboard is live." Each one maps to a decision from slide five: ClickHouse plus RMT, the Parquet bootstrap, and Redpanda buffering. And the whole thing runs for about $2,700 a month — less than a few oversized RDS instances.
+→ Next: five lessons in one slide.
 -->
 
 ---
