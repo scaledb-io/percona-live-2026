@@ -712,7 +712,53 @@ All of it on **~$4k/month** — for a full real-time lake of 80B+ events.
 <!--
 (~60s)
 Was it worth it? Three numbers say yes. Analysts used to wait minutes for a dashboard to load — now they get answers in seconds. Cold-starting the lake used to be a multi-day project that risked taking down the primary — now it's afternoon work that never touches production. And CDC lag went from minutes to seconds, which is the difference between "this dashboard is broken" and "this dashboard is live." Each one maps to one of the four decisions: ClickHouse plus RMT, the Parquet bootstrap, and Redpanda buffering. And the whole thing runs for about $4,000 a month — less than a few oversized RDS instances.
-→ Next: five lessons in one slide.
+→ Next: but stuff still breaks — how we hear about it.
+-->
+
+---
+layout: default
+class: ops-sponsor
+---
+
+# Things Go Wrong. Plan for It.
+
+<div class="pipeline">
+  <div class="lane">
+    <div class="lane-label">Metrics</div>
+    <div class="node">CloudWatch<br/><span class="hint">binlog lag · freshness · offsets</span></div>
+  </div>
+  <div class="connector"></div>
+  <div class="lane">
+    <div class="lane-label">Alarms</div>
+    <div class="node">Composite<br/><span class="hint">AnyConnectorLag · 5 files / 5 min → crit at 20 / 30 min</span></div>
+  </div>
+  <div class="connector"></div>
+  <div class="lane">
+    <div class="lane-label">Routing</div>
+    <div class="node">SNS topic<br/><span class="hint">Events API v2</span></div>
+  </div>
+  <div class="connector"></div>
+  <div class="lane">
+    <div class="lane-label">On-call</div>
+    <div class="node accent">PagerDuty<br/><span class="hint">runbook URL in payload</span></div>
+  </div>
+</div>
+
+- Every node pushes pipeline metrics to CloudWatch — binlog lag, freshness, offsets
+- Per-connector + a composite "any connector behind" alarm
+- Runbook URL travels **with** the alert — on-call gets context, not just a red number
+
+<div class="sponsor-strip">
+  <div class="sponsor-text">
+    Thanks to <strong>PagerDuty</strong> — our sponsor today, and the layer that wakes us up when this thing actually breaks.
+  </div>
+  <img src="/qr-pagerduty.svg" class="sponsor-qr" alt="github.com/PagerDuty" />
+</div>
+
+<!--
+(~75s)
+This is the operational layer we haven't talked about yet — what happens when one of the war stories you just heard happens again, except at 3 AM. Every node pushes metrics to CloudWatch — binlog lag, freshness, offsets per connector. We have per-connector alarms plus a composite "any connector behind" that fires the moment one of them falls over. Those alarms route through an SNS topic to PagerDuty, and the runbook URL travels with the alert payload — on-call gets context, not just a red number. And speaking of PagerDuty: they're our sponsor today, and they're also the layer that actually wakes us up when this stuff breaks. Worth a thank you.
+→ Next: five lessons earned in production.
 -->
 
 ---

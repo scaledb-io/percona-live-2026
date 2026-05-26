@@ -261,6 +261,40 @@ html.dark {
   margin-top: 8px;
 }
 
+/* ---------- Ops + sponsor slide (PagerDuty thank-you) ---------- */
+.sponsor-strip {
+  margin-top: 22px;
+  padding: 14px 18px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 18px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  border-left: 4px solid var(--accent-cyan);
+  border-radius: 8px;
+}
+.sponsor-strip strong {
+  color: var(--accent-cyan);
+  font-weight: 700;
+}
+.sponsor-text {
+  font-size: 0.95em;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+.sponsor-qr {
+  width: 86px;
+  height: 86px;
+  padding: 4px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+}
+html.dark .sponsor-qr {
+  filter: invert(1);
+}
+
 /* ---------- Closing emotional-beat line on the Lessons slide ---------- */
 .closing-line {
   margin-top: 28px;
