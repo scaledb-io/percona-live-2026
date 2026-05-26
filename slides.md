@@ -802,7 +802,7 @@ class: closing
     <div class="cta-card-url">scaledb.io</div>
   </a>
   <a href="https://github.com/scaledb-io/cloud" class="cta-card">
-    <div class="cta-card-label">Open source CDC platform</div>
+    <div class="cta-card-label">Clone &amp; run locally · docker compose up</div>
     <div class="cta-card-url">github.com/scaledb-io/cloud</div>
   </a>
 </div>
@@ -820,6 +820,6 @@ class: closing
 
 <!--
 (~45s — then opens ~5 min Q&A)
-That's the talk — I'd love your questions. Two pointers before we open it up: scaledb.io is where we live, and the entire CDC platform we just walked through is open source at github.com/scaledb-io/cloud — you can self-host the exact pipeline from this talk. Find me after if we run out of time. Thanks for having me.
+That's the talk — I'd love your questions. Two pointers before we open it up: scaledb.io is where we live, and the entire CDC platform we just walked through is open source at github.com/scaledb-io/cloud. Clone it, run `docker compose up`, and you've got the exact pipeline from this talk running on your laptop in about ten minutes. Find me after if we run out of time. Thanks for having me.
 → Q&A.
 -->
