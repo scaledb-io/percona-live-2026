@@ -39,23 +39,41 @@ class: bio
 
 ## Founder, ScaleDB
 
-- Database and platform engineer with **15+ years** working on MySQL, distributed systems, and real-time data infrastructure
-- Former **Percona Remote DBA**, helping operate and troubleshoot production database systems at scale
-- Focused on modern data architectures combining **MySQL, CDC pipelines, streaming platforms, and ClickHouse**
+<div class="bio-cols">
+
+<div>
+
+**Engineering**
+- **15+ years** on MySQL, distributed systems, and real-time data infrastructure
+- Former **Percona Remote DBA** — production databases at scale
+
+</div>
+
+<div>
+
+**Off the clock**
+- Husband & father of two
+- Helping communities understand AI
+- Taekwondo instructor
+- Advanced Open Water diver
+
+</div>
+
+</div>
 
 *Still occasionally surprised by what people run directly against production MySQL.*
 
 <div class="bio-links">
   <a href="https://scaledb.io">scaledb.io</a>
   <span class="dot">·</span>
-  <a href="https://www.linkedin.com/in/javierzon">linkedin.com/in/javierzon</a>
+  <a href="https://www.linkedin.com/in/jtomaszon">linkedin.com/in/jtomaszon</a>
   <span class="dot">·</span>
   <a href="https://github.com/jtomaszon">github.com/jtomaszon</a>
 </div>
 
 <!--
 (~30s)
-Quick context before we dive in. I'm Javier — fifteen years on MySQL and the platforms around it, including a stint on the Percona Remote DBA team, where you see every way a production database can go sideways. These days I run ScaleDB, focused on modern data architectures that combine MySQL with CDC, streaming, and ClickHouse. Everything you'll see today comes from running that pattern in production — including, occasionally, getting surprised by what people still run directly against the source database.
+Quick context before we dive in. By day: fifteen years on MySQL and the platforms around it, including a stint on the Percona Remote DBA team — where you see every way a production database can go sideways. Off the clock I'm a husband and dad of two, I help local communities make sense of AI, I teach Taekwondo, and I dive. Everything you'll see today comes from running this pattern in production — including, occasionally, getting surprised by what people still run directly against the source database.
 → Next: the problem that pushed us to build this.
 -->
 

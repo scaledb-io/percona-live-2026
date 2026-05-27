@@ -309,6 +309,28 @@ html.dark .sponsor-qr {
 }
 
 /* ---------- Bio slide (page 2) ---------- */
+.bio-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+  margin-top: 8px;
+}
+.bio-cols > div > p:first-child,
+.bio-cols strong:first-child {
+  /* section labels: "Engineering" / "Off the clock" */
+  display: block;
+  font-size: 0.85em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-cyan);
+  margin-bottom: 6px;
+}
+.bio-cols ul {
+  margin-top: 4px;
+}
+.bio-cols li {
+  margin-bottom: 0.3em;
+}
 .slidev-layout.bio h2 {
   /* "Founder, ScaleDB" sits as a subtitle directly under the name */
   font-size: 1.4em;
