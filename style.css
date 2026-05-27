@@ -116,6 +116,13 @@ html.dark {
   font-size: 1.55rem;
   line-height: 1.5;
 }
+/* The default theme dims the first paragraph after an h1 to opacity 0.5
+   (its "lead/subtitle" convention). We treat all body copy uniformly, so
+   undo it — otherwise the first bullet on text-led slides (e.g. Four
+   Decisions) renders washed out. */
+.slidev-layout h1 + p {
+  opacity: 1;
+}
 .slidev-layout li {
   margin-bottom: 0.55em;
 }
@@ -309,11 +316,25 @@ html.dark .sponsor-qr {
 }
 
 /* ---------- Bio slide (page 2) ---------- */
+.slidev-layout.bio .bio-photo {
+  position: absolute;
+  top: 54px;
+  right: 60px;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--accent-cyan);
+  box-shadow: var(--shadow);
+}
 .bio-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 36px;
   margin-top: 8px;
+  /* leave clearance on the right so the second column never runs under the
+     circular portrait pinned to the top-right corner */
+  padding-right: 220px;
 }
 .bio-cols > div > p:first-child,
 .bio-cols strong:first-child {
@@ -372,6 +393,12 @@ html.dark       { --war-red: #FF5252; }
   position: relative;
   border-left: 6px solid var(--war-red);
   padding-left: 70px;
+}
+/* War-story titles run a bit smaller and reserve space on the right so they
+   never collide with the rotated WAR STORY stamp in the top-right corner. */
+.slidev-layout.war h1 {
+  font-size: 2.05em;
+  padding-right: 210px;
 }
 .slidev-layout.war::after {
   content: 'WAR STORY';
@@ -444,6 +471,21 @@ html.dark       { --war-red: #FF5252; }
 .pipeline .node.accent {
   border-color: var(--accent-cyan);
   box-shadow: 0 0 0 1px var(--accent-cyan) inset;
+}
+
+/* Walking spotlight: the active lane (driven by $clicks) lights up cyan. */
+.pipeline .lane {
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+.pipeline .lane.lane-active {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 2px var(--accent-cyan) inset, 0 0 22px color-mix(in srgb, var(--accent-cyan) 35%, transparent);
+}
+.pipeline .lane.lane-active .lane-label {
+  color: var(--accent-cyan);
+}
+.pipeline .lane.lane-active .node {
+  border-color: var(--accent-cyan);
 }
 .pipeline .node.ghost {
   border-style: dashed;
@@ -596,12 +638,12 @@ html.dark .event-logo {
   gap: 6px;
 }
 .qr-block img {
-  width: 130px;
-  height: 130px;
+  width: 180px;
+  height: 180px;
   background: var(--bg-elevated);
   border: 1px solid var(--border-soft);
   border-radius: 8px;
-  padding: 6px;
+  padding: 8px;
 }
 html.dark .qr-block img {
   filter: invert(1);

@@ -39,6 +39,8 @@ class: bio
 
 ## Founder, ScaleDB
 
+<img src="/zon.jpeg" class="bio-photo" alt="Javier Zon" />
+
 <div class="bio-cols">
 
 <div>
@@ -127,35 +129,39 @@ Quick sense of scale before we dig in. 80 billion+ events landed, 35 terabytes o
 
 ---
 layout: default
+clicks: 4
 ---
 
 # The End-to-End Pipeline
 
 <div class="pipeline">
-  <div class="lane">
+  <div class="lane" :class="{ 'lane-active': $clicks === 1 }">
     <div class="lane-label">OLTP</div>
-    <div class="node">MySQL 8<br/><span class="hint">binlog</span></div>
+    <div class="node">MySQL<br/><span class="hint">5.7+ · binlog</span></div>
+    <div class="node ghost">PostgreSQL<br/><span class="hint">WAL · also works</span></div>
   </div>
   <div class="connector"></div>
-  <div class="lane">
+  <div class="lane" :class="{ 'lane-active': $clicks === 2 }">
     <div class="lane-label">CDC</div>
     <div class="node">Debezium</div>
     <div class="arrow">→</div>
     <div class="node">Redpanda<br/><span class="hint">RF=3 · 64 partitions</span></div>
   </div>
   <div class="connector"></div>
-  <div class="lane">
+  <div class="lane" :class="{ 'lane-active': $clicks === 3 }">
     <div class="lane-label">OLAP — Lake</div>
     <div class="node">Kafka engine</div>
     <div class="arrow">→</div>
     <div class="node">Materialized View<br/><span class="hint">types · PII firewall</span></div>
     <div class="arrow">→</div>
-    <div class="node accent">ReplacingMergeTree<br/><span class="hint">_version · _deleted</span></div>
+    <div class="node">ReplacingMergeTree<br/><span class="hint">_version · _deleted</span></div>
   </div>
   <div class="connector"></div>
-  <div class="lane">
+  <div class="lane" :class="{ 'lane-active': $clicks === 4 }">
     <div class="lane-label">Clients</div>
-    <div class="node ghost">BI · AI agents</div>
+    <div class="node ghost">BI · Metabase</div>
+    <div class="node ghost">AI agents · MCP</div>
+    <div class="node ghost">Apps · ORMs</div>
   </div>
 </div>
 
@@ -163,7 +169,7 @@ layout: default
 
 <!--
 (~75s)
-Let me walk one row change end to end. A write hits MySQL — Debezium reads it from the binlog, never from a table. The change lands in Redpanda, partitioned by table, replicated three ways. ClickHouse pulls it through a Kafka engine table, a materialized view types and filters it — that MV is also our PII firewall — and it lands in a ReplacingMergeTree where BI tools and AI agents read it. The key word is loose coupling: Redpanda is a buffer, so if ClickHouse goes down for an hour, we lose nothing.
+Let me walk one row change end to end — I'll highlight each stage as we go. (click) It starts at the source: MySQL here, but Debezium does the same thing with PostgreSQL's WAL, so this whole pattern is database-agnostic. (click) Debezium reads the change from the binlog, never from a table, and it lands in Redpanda — partitioned by table, replicated three ways. (click) ClickHouse pulls it through a Kafka engine table; a materialized view types and filters it — that MV is also our PII firewall — and it lands in a ReplacingMergeTree. (click) From there anything can read it: BI tools like Metabase, AI agents through the MCP gateway, apps and ORMs running real-time analytics. The key word is loose coupling: Redpanda is a buffer, so if ClickHouse goes down for an hour, we lose nothing.
 → Next: the four decisions that shaped everything downstream.
 -->
 
@@ -304,7 +310,7 @@ layout: default
 class: war
 ---
 
-# We Did NOT Load 9 Billion Rows Through Debezium
+# Don't Bootstrap 9B Rows Through Debezium
 
 CDC is for the stream, **not** for hauling history.
 
